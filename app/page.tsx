@@ -10,7 +10,7 @@ type Row = {
 };
 
 const aliases = {
-  ps:["ps","p.s.","part no","part number","partno","polling station","part"],
+  ps:["ps","ps no","ps number","p.s.","p.s. no","p.s. number","part no","part number","partno","polling station","part"],
   generated:["notice generated","notices generated","notice gen"],
   delivered:["notice delivered","notices delivered","delivered"],
   hearing:["hearings held","hearing held","hearing done","hearing"],
@@ -32,7 +32,7 @@ async function readRows(file:File){
   let headerIndex=0;
   for(let i=0;i<Math.min(raw.length,40);i++){
     const h=(raw[i]||[]).map(norm).join(" | ");
-    if(h.includes("part no")||h.includes("p s no")||h.includes("notice generated")||h.includes("hearings held")){headerIndex=i;break}
+    if(h.includes("part no")||h.includes("p s no")||h.includes("ps no")||h.includes("ps number")||h.includes("notice generated")||h.includes("hearings held")){headerIndex=i;break}
   }
   const headers=(raw[headerIndex]||[]).map((x:any)=>String(x??""));
   return {headers, rows:raw.slice(headerIndex+1)};
@@ -126,7 +126,7 @@ export default function Page(){
       <div className="card"><h3>③ BLO / Other Excel</h3><p>Documents uploaded, discrepancy/anomaly delivery and BLO-letter data are merged by PS.</p><input className="input" type="file" accept=".xlsx,.xls,.csv" onChange={load(setBlo,"blo")}/></div>
     </div>
     {error&&<div className="error">{error}</div>}
-    <div className="section card"><h3>One-time Master Mapping</h3><div className="note">The app has a fixed master mapping slot. If you need to replace it, upload an Excel containing PS No, AERO/Ad.AERO, BLO Supervisor, BLO Name and mobiles. The mapping is used on every subsequent ECI upload.</div><div style={{marginTop:10}}><input className="input" type="file" accept=".xlsx,.xls,.csv" onChange={e=>{const f=e.target.files?.[0];if(!f)return;readRows(f).then(p=>{const m=parseMapping(p);if(m.size<100){setError("Master mapping file was not detected. Required: PS No + AERO/Ad.AERO + BLO Supervisor + BLO Name.");return;}setMaster(m);setError("");}).catch(err=>setError(String(err)));}}/></div></div>
+    <div className="section card"><h3>One-time Master Mapping</h3><div className="note">The app has a fixed master mapping slot. If you need to replace it, upload an Excel containing PS No, AERO/Ad.AERO, BLO Supervisor, BLO Name and mobiles. The mapping is used on every subsequent ECI upload.</div><div style={{marginTop:10}}><input className="input" type="file" accept=".xlsx,.xls,.csv" onChange={e=>{const f=e.target.files?.[0];if(!f)return;readRows(f).then(p=>{const m=parseMapping(p);if(m.size<100){setError("Master mapping file was not detected. The PS column must be named PS No / PS Number / Part No, and the file must contain AERO/Ad.AERO, BLO Supervisor and BLO Name.");return;}setMaster(m);setError("");}).catch(err=>setError(String(err)));}}/></div></div>
     {master.size===0&&<div className="error">Master mapping is not loaded yet. Upload the one-time mapping Excel below. It must contain PS No, AERO/Ad.AERO, BLO Supervisor and BLO Name. After upload it is saved in this browser for future ECI updates.</div>}
     <div className="stats">
       <div className="stat"><span>PS shown</span><b>{shown.length}</b></div><div className="stat"><span>Notice Generated</span><b>{totals.gen.toLocaleString()}</b></div><div className="stat"><span>Latest Delivered</span><b>{totals.del.toLocaleString()}</b></div><div className="stat"><span>Previous Hearing</span><b>{totals.ph.toLocaleString()}</b></div><div className="stat"><span>Latest Hearing</span><b>{totals.lh.toLocaleString()}</b></div><div className="stat"><span>Zero Hearing PS</span><b className="neg">{totals.zero}</b></div>
