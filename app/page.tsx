@@ -40,9 +40,19 @@ async function readRows(file:File){
   const ws=wb.Sheets[wb.SheetNames[0]];
   const raw=XLSX.utils.sheet_to_json<any[]>(ws,{header:1,defval:""});
   let headerIndex=0;
-  for(let i=0;i<Math.min(raw.length,40);i++){
-    const h=(raw[i]||[]).map(norm).join(" | ");
-    if(h.includes("part no")||h.includes("p s no")||h.includes("ps no")||h.includes("ps number")||h.includes("notice generated")||h.includes("hearings held")||h.includes("discrepancy")||h.includes("blo docs")||h.includes("blo letter")){headerIndex=i;break}
+  let bestScore=-1;
+  for(let i=0;i<Math.min(raw.length,60);i++){
+    const h=(raw[i]||[]).map(norm);
+    const joined=h.join(" | ");
+    let score=0;
+    if(h.some(x=>["p s no","ps no","ps number","part no","part number"].includes(x)))score+=5;
+    if(joined.includes("notice generated"))score+=3;
+    if(joined.includes("notice delivered")||joined.includes("notices delivered"))score+=2;
+    if(joined.includes("hearings held")||joined.includes("hearing held"))score+=2;
+    if(joined.includes("discrep"))score+=2;
+    if(joined.includes("blo docs")||joined.includes("documents uploaded by blo"))score+=2;
+    if(joined.includes("blo letter"))score+=2;
+    if(score>bestScore){bestScore=score;headerIndex=i;}
   }
   const headers=(raw[headerIndex]||[]).map((x:any)=>String(x??""));
   return {headers, rows:raw.slice(headerIndex+1)};
