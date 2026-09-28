@@ -101,6 +101,43 @@ function merge(master:Map<number,any>, previous:Map<number,any>, latest:Map<numb
   });
 }
 
+const n=(x:number)=>x.toLocaleString("en-IN");
+const pct=(a:number,b:number)=>b?((a/b)*100).toFixed(2)+"%":"0.00%";
+const esc=(x:any)=>String(x??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+function buildGroups(rows:Row[]){
+  const groups=new Map<string,Row[]>();
+  for(const r of rows){const k=r.aero||"Unmapped";const a=groups.get(k)||[];a.push(r);groups.set(k,a);}
+  const sum=(rs:Row[],k:keyof Row)=>rs.reduce((s,r)=>s+Number(r[k]||0),0);
+  return Array.from(groups.entries()).map(([aero,rs])=>{
+    const x={ps:rs.length,gen:sum(rs,"noticeGenerated"),pd:sum(rs,"prevDelivered"),ld:sum(rs,"latestDelivered"),ph:sum(rs,"prevHearing"),lh:sum(rs,"latestHearing"),lapse:sum(rs,"hearingLapse"),disc:sum(rs,"discrepancyDelivered"),docs:sum(rs,"bloDocs"),letter:sum(rs,"bloLetter")};
+    return {aero,rs,x,dispose:x.lh+x.lapse?x.lh/(x.lh+x.lapse)*100:0};
+  });
+}
+
+function getTopAeros(rows:Row[]){
+  return new Set(buildGroups(rows).slice().sort((a,b)=>a.dispose-b.dispose).slice(0,3).map(x=>x.aero));
+}
+
+function getTopBloKeys(rows:Row[]){
+  const result=new Set<string>();
+  const byAero=new Map<string,Map<string,Row[]>>();
+  for(const r of rows){
+    const key=r.bloName+"|"+r.ps;
+    const m=byAero.get(r.aero)||new Map<string,Row[]>();
+    const a=m.get(key)||[];a.push(r);m.set(key,a);byAero.set(r.aero,m);
+  }
+  for(const [aero,m] of byAero){
+    const list=Array.from(m.entries()).map(([key,rs])=>{
+      const hearing=rs.reduce((s,r)=>s+r.latestHearing,0);
+      const lapse=rs.reduce((s,r)=>s+r.hearingLapse,0);
+      return {key,dispose:hearing+lapse?hearing/(hearing+lapse)*100:0};
+    }).sort((a,b)=>a.dispose-b.dispose).slice(0,3);
+    list.forEach(x=>result.add(aero+"|"+x.key));
+  }
+  return result;
+}
+
 function printReport(rows:Row[]){
   const groups=buildGroups(rows);
   const topAeros=getTopAeros(rows);
@@ -157,6 +194,8 @@ export default function Page(){
   const totals=useMemo(()=>rows.reduce((a,r)=>({gen:a.gen+r.noticeGenerated,del:a.del+r.latestDelivered,ph:a.ph+r.prevHearing,lh:a.lh+r.latestHearing,zero:a.zero+(r.latestHearing===0?1:0)}),{gen:0,del:0,ph:0,lh:0,zero:0}),[rows]);
   const officerSummary=useMemo(()=>{const m=new Map<string,any>();for(const r of rows){const k=r.aero||"Unmapped";const x=m.get(k)||{aero:k,designation:r.designation,ps:0,gen:0,del:0,dh:0,zero:0};x.ps++;x.gen+=r.noticeGenerated;x.del+=r.latestDelivered;x.dh+=r.latestHearing;x.zero+=r.latestHearing===0?1:0;m.set(k,x);}return Array.from(m.values()).sort((a,b)=>a.aero.localeCompare(b.aero));},[rows]);
   const underperformers=useMemo(()=>{const m=officerSummary.map(x=>{const rs=rows.filter(r=>r.aero===x.aero);const hearing=rs.reduce((s,r)=>s+r.latestHearing,0);const lapse=rs.reduce((s,r)=>s+r.hearingLapse,0);return {aero:x.aero,dispose:(hearing+lapse)?hearing/(hearing+lapse)*100:0};}).sort((a,b)=>a.dispose-b.dispose);return new Set(m.slice(0,3).map(x=>x.aero));},[officerSummary,rows]);
+  const topAeros=useMemo(()=>getTopAeros(rows),[rows]);
+  const topBlo=useMemo(()=>getTopBloKeys(rows),[rows]);
   const bloUnderperformers=useMemo(()=>{const m=new Map<string,any>();for(const r of rows){const key=`${r.aero}|${r.bloName}|${r.ps}`;const x=m.get(key)||{aero:r.aero,blo:r.bloName,ps:r.ps,hearing:0,lapse:0};x.hearing+=r.latestHearing;x.lapse+=r.hearingLapse;m.set(key,x);}const byAero=new Map<string,any[]>();for(const x of m.values()){const a=byAero.get(x.aero)||[];a.push(x);byAero.set(x.aero,a);}const result=new Set<string>();for(const [aero,list] of byAero){list.sort((a,b)=>(a.hearing+a.lapse?a.hearing/(a.hearing+a.lapse)*100:0)-(b.hearing+b.lapse?b.hearing/(b.hearing+b.lapse)*100:0)).slice(0,3).forEach(x=>result.add(`${x.aero}|${x.blo}|${x.ps}`));}return result;},[rows]);
   const supervisorSummary=useMemo(()=>{const m=new Map<string,any>();for(const r of rows){const k=r.supervisor||"Unmapped";const x=m.get(k)||{name:k,ps:0,hearing:0,zero:0};x.ps++;x.hearing+=r.latestHearing;x.zero+=r.latestHearing===0?1:0;m.set(k,x);}return Array.from(m.values()).sort((a,b)=>a.name.localeCompare(b.name));},[rows]);
 
