@@ -2,16 +2,27 @@
 
 Vercel-ready Next.js dashboard for AC-34 Matiala SIR-2026.
 
-## Workflow
-1. Keep the one-time master mapping: PS -> AERO/Ad.AERO -> BLO Supervisor -> BLO.
-2. Upload Previous ECI Excel.
-3. Upload Latest ECI Excel.
-4. Upload BLO/Other Excel.
-5. Dashboard joins all data by PS.
-6. Notice Generated uses Latest ECI.
-7. Delivered Difference = Latest - Previous.
-8. Hearing Difference = Latest - Previous.
-9. PS with Latest Hearing Held = 0 stay highlighted red until a later Latest ECI report shows >0.
-10. Export the filtered report to Excel.
+## Daily workflow
+1. Upload the one-time Master Mapping Excel containing PS No, AERO/Ad.AERO, AERO mobile, BLO Supervisor, BLO Name and BLO Mobile. The browser saves this mapping in localStorage, so it does not need to be uploaded every day.
+2. Upload Previous ECI Excel — comparison baseline.
+3. Upload Latest ECI Excel — current values.
+4. Upload BLO / Other Excel — documents/anomaly/discrepancy/BLO-letter values.
+5. All daily data is joined by PS number.
+6. Notice Generated comes from Latest ECI.
+7. Delivered Difference = Latest Delivered − Previous Delivered.
+8. Hearing Difference = Latest Hearing Held − Previous Hearing Held.
+9. Every PS with Latest Hearing Held = 0 is highlighted red. The highlight disappears automatically when a later Latest ECI upload shows Hearing Held > 0.
+10. AERO/Ad.AERO and BLO Supervisor summaries update automatically.
+11. Filter by AERO, Supervisor, PS/BLO search and export the current view to Excel.
 
-The app is intentionally client-side, so Excel files are processed in the browser and are not uploaded to a server.
+## Vercel deployment
+- Import this GitHub repository into Vercel.
+- Framework: Next.js (auto-detected).
+- Build command: next build.
+- No environment variables are required.
+- Deploy.
+
+The Excel files are processed in the browser; this app does not send the uploaded Excel files to a server.
+
+## Important
+The master mapping is intentionally separated from daily ECI metrics. This prevents a new ECI report from changing the PS-to-officer/BLO relationship.
