@@ -10,19 +10,29 @@ type Row = {
 };
 
 const aliases = {
-  ps:["ps","ps no","ps number","p.s.","p.s. no","p.s. number","part no","part number","partno","polling station","part"],
-  generated:["notice generated","notices generated","notice gen"],
-  delivered:["notice delivered","notices delivered","delivered"],
-  hearing:["hearings held","hearing held","hearing done","hearing"],
-  lapse:["hearing date lapsed","hearing lapsed","lapsed"],
-  docs:["documents uploaded by blo","docs uploaded by blo","blo docs uploaded","blo docs uploaded no mapping","blo documents","documents uploaded","blo docs"],
-  discrepancy:["discrep notices delivered","discrepancy notices delivered","discrep notices delivery","anomaly notices delivered","anomaly delivered","discrepancy delivered"],
-  letter:["blo letter uploaded","blo letters uploaded","blo letter"]
+  ps:["ps","ps no","ps number","p.s.","p.s. no","p.s. number","part no","part number","partno","polling station","part","part no of polling station"],
+  generated:["notice generated","notices generated","notice gen","no of notices generated","total notices generated"],
+  delivered:["notice delivered","notices delivered","delivered","notices delivered to electors","notice delivery"],
+  hearing:["hearings held","hearing held","hearing done","hearing","hearing held by blo","no of hearings held"],
+  lapse:["hearing date lapsed","hearing lapsed","lapsed","hearing lapse","date lapsed"],
+  docs:["documents uploaded by blo","documents uploaded by blo (no mapping)","documents uploaded","docs uploaded by blo","blo docs uploaded","blo docs uploaded no mapping","blo documents","blo docs","documents uploaded by blo no mapping","no of documents uploaded by blo","document uploaded by blo"],
+  discrepancy:["discrep notices delivered","discrepancy notices delivered","discrep notices delivery","anomaly notices delivered","anomaly delivered","discrepancy delivered","discrepancy/anomaly delivered","discrepancy + anomaly delivered","no of discrepancy notices delivered","no of anomaly notices delivered","discrepancy notice delivered"],
+  letter:["blo letter uploaded","blo letters uploaded","blo letter","blo letter uploaded by blo","letters uploaded by blo","no of blo letter uploaded","blo letters"]
 };
 
 function norm(v:any){return String(v??"").trim().toLowerCase().replace(/[^a-z0-9]+/g," ");}
 function num(v:any){const n=Number(String(v??"").replace(/,/g,"").replace(/%/g,""));return Number.isFinite(n)?n:0;}
-function findCol(headers:string[], names:string[]){const hs=headers.map(norm); for(const n of names){const i=hs.indexOf(norm(n));if(i>=0)return i} return -1;}
+function findCol(headers:string[], names:string[]){
+  const hs=headers.map(norm);
+  for(const n of names){const target=norm(n);const i=hs.indexOf(target);if(i>=0)return i;}
+  for(const n of names){
+    const target=norm(n);
+    if(target.length<4) continue;
+    const i=hs.findIndex(h=>h===target || h.includes(target) || target.includes(h));
+    if(i>=0)return i;
+  }
+  return -1;
+}
 
 async function readRows(file:File){
   const buf=await file.arrayBuffer();
@@ -80,40 +90,46 @@ function parseMapping(parsed:{headers:string[];rows:any[][]}){
   return out;
 }
 
-function merge(master:Map<number,any>, previous:Map<number,any>, latest:Map<number,any>, blo:Map<number,any>){
-  return Array.from(master.entries()).sort((a,b)=>a[0]-b[0]).map(([ps,m])=>{
-    const p=previous.get(ps)||{}, l=latest.get(ps)||{}, b=blo.get(ps)||{};
-    const latestDelivered=l.latestDelivered??m.latestDelivered??0;
-    const prevDelivered=p.latestDelivered??m.prevDelivered??0;
-    const latestHearing=l.latestHearing??m.latestHearing??0;
-    const prevHearing=p.latestHearing??m.prevHearing??0;
-    return {...m,ps,noticeGenerated:l.noticeGenerated??m.noticeGenerated??0,prevDelivered,latestDelivered,prevHearing,latestHearing,hearingLapse:l.hearingLapse??m.hearingLapse??0,discrepancyDelivered:b.discrepancyDelivered??l.discrepancyDelivered??m.discrepancyDelivered??0,bloDocs:b.bloDocs??l.bloDocs??m.bloDocs??0,bloLetter:b.bloLetter??l.bloLetter??m.bloLetter??0};
-  });
-}
-
-function printReport(allRows:Row[]) {
+function merge(master:Map<number,any>, previous:Map<nfunction printReport(allRows:Row[]) {
   const groups=new Map<string,Row[]>();
   for(const r of allRows){const k=r.aero||"Unmapped";const a=groups.get(k)||[];a.push(r);groups.set(k,a);}
   const sum=(rs:Row[],k:keyof Row)=>rs.reduce((s,r)=>s+Number(r[k]||0),0);
   const n=(x:number)=>x.toLocaleString("en-IN");
+  const pct=(a:number,b:number)=>b?((a/b)*100).toFixed(1)+"%":"0.0%";
   const esc=(x:any)=>String(x??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  let h="<!doctype html><html><head><title>AC-34 Notice & Hearing Report</title><style>@page{size:A4 landscape;margin:8mm}body{font-family:Arial;font-size:8px;color:#111}h1{text-align:center;font-size:16px;margin:0 0 4px}h2{font-size:12px;margin:12px 0 5px}.meta{text-align:center;margin-bottom:8px}table{border-collapse:collapse;width:100%;margin-bottom:10px}th,td{border:1px solid #222;padding:3px}th{background:#e5e7eb;font-weight:700}td.num{text-align:right}.zero{background:#ffd6d6;color:#9b0000;font-weight:700}.grand{background:#d9d9d9;font-weight:700}.aero{background:#dfe6ee;font-weight:700;padding:5px;border:1px solid #222}</style></head><body>";
-  h+="<h1>OFFICE OF THE ELECTORAL REGISTRATION OFFICER, AC-34, MATIALA</h1><div class=meta>SIR-2026 — PS-WISE (AERO-WISE) NOTICE & HEARING REPORT — Previous ECI vs Latest ECI</div>";
-  h+="<h2>AERO / Ad.AERO WISE CONSOLIDATED REPORT</h2><table><tr><th>S.No.</th><th>AERO / Ad.AERO</th><th>Designation</th><th>PS</th><th>Notice Generated</th><th>Delivered Prev</th><th>Delivered Latest</th><th>Diff Delivered</th><th>Hearing Prev</th><th>Hearing Latest</th><th>Diff Hearing</th><th>Lapse</th><th>Discrepancy Delivered</th><th>BLO Docs</th><th>BLO Letter</th></tr>";
-  let gi=0; const grand={ps:0,gen:0,pd:0,ld:0,ph:0,lh:0,lapse:0,disc:0,docs:0,letter:0};
-  for(const [aero,rs] of Array.from(groups.entries()).sort((a,b)=>a[0].localeCompare(b[0]))){
+  const groupRows=Array.from(groups.entries()).map(([aero,rs])=>{
     const x={ps:rs.length,gen:sum(rs,"noticeGenerated"),pd:sum(rs,"prevDelivered"),ld:sum(rs,"latestDelivered"),ph:sum(rs,"prevHearing"),lh:sum(rs,"latestHearing"),lapse:sum(rs,"hearingLapse"),disc:sum(rs,"discrepancyDelivered"),docs:sum(rs,"bloDocs"),letter:sum(rs,"bloLetter")};
+    return {aero,rs,x,dispose:x.lh+x.lapse?x.lh/(x.lh+x.lapse)*100:0};
+  }).sort((a,b)=>a.dispose-b.dispose);
+  const under=new Set(groupRows.slice(0,3).map(x=>x.aero));
+  let h="<!doctype html><html><head><title>AC-34 Notice & Hearing Report</title><style>@page{size:A4 landscape;margin:7mm}body{font-family:Arial,sans-serif;font-size:10px;color:#111}h1{text-align:center;font-size:18px;margin:0 0 5px}h2{font-size:14px;margin:13px 0 6px}.meta{text-align:center;font-size:10px;margin-bottom:9px}table{border-collapse:collapse;width:100%;margin-bottom:12px;page-break-inside:auto}tr{page-break-inside:avoid}th,td{border:1px solid #222;padding:5px 4px;vertical-align:middle}th{background:#dfe6ee;font-weight:700;font-size:9px}td.num{text-align:right;font-size:10px;font-weight:600}.zero{background:#ffd6d6!important;color:#9b0000!important;font-weight:700}.under{background:#b9d9ff!important;color:#063b73!important;font-weight:700}.grand{background:#d9d9d9;font-weight:700}.aero{background:#dfe6ee;font-weight:700;padding:7px;border:1px solid #222;font-size:11px}.badge{background:#b9d9ff;border:1px solid #5d91c9;padding:2px 5px;margin-left:5px}.small{font-size:9px}</style></head><body>";
+  h+="<h1>OFFICE OF THE ELECTORAL REGISTRATION OFFICER, AC-34, MATIALA</h1><div class=meta>SIR-2026 — PS-WISE (AERO-WISE) NOTICE & HEARING REPORT — Previous ECI vs Latest ECI</div>";
+  h+="<h2>AERO / Ad.AERO WISE CONSOLIDATED REPORT</h2><table><tr><th>S.No.</th><th>AERO / Ad.AERO</th><th>Designation</th><th>PS</th><th>Notice Generated</th><th>Delivered Prev</th><th>Delivered Latest</th><th>Diff Delivered</th><th>Hearing Prev</th><th>Hearing Latest</th><th>Diff Hearing</th><th>Lapse</th><th>Dispose %</th><th>Discrepancy Delivered</th><th>BLO Docs</th><th>BLO Letter</th></tr>";
+  let gi=0; const grand={ps:0,gen:0,pd:0,ld:0,ph:0,lh:0,lapse:0,disc:0,docs:0,letter:0};
+  for(const g of groupRows){
+    const {aero,rs,x}=g;
     grand.ps+=x.ps;grand.gen+=x.gen;grand.pd+=x.pd;grand.ld+=x.ld;grand.ph+=x.ph;grand.lh+=x.lh;grand.lapse+=x.lapse;grand.disc+=x.disc;grand.docs+=x.docs;grand.letter+=x.letter;
     gi++;
-    h+="<tr><td>"+gi+"</td><td>"+esc(aero)+"</td><td>"+esc(rs[0]?.designation)+"</td><td class=num>"+n(x.ps)+"</td><td class=num>"+n(x.gen)+"</td><td class=num>"+n(x.pd)+"</td><td class=num>"+n(x.ld)+"</td><td class=num>"+n(x.ld-x.pd)+"</td><td class=num>"+n(x.ph)+"</td><td class=num>"+n(x.lh)+"</td><td class=num>"+n(x.lh-x.ph)+"</td><td class=num>"+n(x.lapse)+"</td><td class=num>"+n(x.disc)+"</td><td class=num>"+n(x.docs)+"</td><td class=num>"+n(x.letter)+"</td></tr>";
+    h+="<tr class="+(under.has(aero)?"under":"")+"><td>"+gi+"</td><td>"+esc(aero)+(under.has(aero)?" <span class=badge>TOP 3 UNDERPERFORMER</span>":"")+"</td><td>"+esc(rs[0]?.designation)+"</td><td class=num>"+n(x.ps)+"</td><td class=num>"+n(x.gen)+"</td><td class=num>"+n(x.pd)+"</td><td class=num>"+n(x.ld)+"</td><td class=num>"+n(x.ld-x.pd)+"</td><td class=num>"+n(x.ph)+"</td><td class=num>"+n(x.lh)+"</td><td class=num>"+n(x.lh-x.ph)+"</td><td class=num>"+n(x.lapse)+"</td><td class=num>"+pct(x.lh,x.lh+x.lapse)+"</td><td class=num>"+n(x.disc)+"</td><td class=num>"+n(x.docs)+"</td><td class=num>"+n(x.letter)+"</td></tr>";
   }
-  h+="<tr class=grand><td colspan=3>GRAND TOTAL</td><td class=num>"+n(grand.ps)+"</td><td class=num>"+n(grand.gen)+"</td><td class=num>"+n(grand.pd)+"</td><td class=num>"+n(grand.ld)+"</td><td class=num>"+n(grand.ld-grand.pd)+"</td><td class=num>"+n(grand.ph)+"</td><td class=num>"+n(grand.lh)+"</td><td class=num>"+n(grand.lh-grand.ph)+"</td><td class=num>"+n(grand.lapse)+"</td><td class=num>"+n(grand.disc)+"</td><td class=num>"+n(grand.docs)+"</td><td class=num>"+n(grand.letter)+"</td></tr></table>";
+  h+="<tr class=grand><td colspan=3>GRAND TOTAL</td><td class=num>"+n(grand.ps)+"</td><td class=num>"+n(grand.gen)+"</td><td class=num>"+n(grand.pd)+"</td><td class=num>"+n(grand.ld)+"</td><td class=num>"+n(grand.ld-grand.pd)+"</td><td class=num>"+n(grand.ph)+"</td><td class=num>"+n(grand.lh)+"</td><td class=num>"+n(grand.lh-grand.ph)+"</td><td class=num>"+n(grand.lapse)+"</td><td class=num>"+pct(grand.lh,grand.lh+grand.lapse)+"</td><td class=num>"+n(grand.disc)+"</td><td class=num>"+n(grand.docs)+"</td><td class=num>"+n(grand.letter)+"</td></tr></table>";
+  h+="<div class=small>Blue rows = 3 AERO / Ad.AERO with the lowest disposal percentage (Hearing Held ÷ (Hearing Held + Hearing Lapse)). Red PS rows = Latest Hearing Held = 0.</div>";
   h+="<h2>PS-WISE AERO-WISE REPORT</h2>";
-  for(const [aero,rs] of Array.from(groups.entries()).sort((a,b)=>a[0].localeCompare(b[0]))){
-    h+="<div class=aero>"+esc(aero)+" — "+esc(rs[0]?.designation)+" | "+rs.length+" PS | Notice Generated: "+n(sum(rs,"noticeGenerated"))+" | Hearings Held: "+n(sum(rs,"latestHearing"))+"</div>";
+  for(const g of groupRows){
+    const {aero,rs,x}=g;
+    h+="<div class=aero>"+esc(aero)+" — "+esc(rs[0]?.designation)+" | "+rs.length+" PS | Notice Generated: "+n(x.gen)+" | Hearings Held: "+n(x.lh)+(under.has(aero)?" <span class=badge>TOP 3 UNDERPERFORMER</span>":"")+"</div>";
     h+="<table><tr><th>S.No.</th><th>PS No.</th><th>BLO Name</th><th>BLO Mobile</th><th>BLO Supervisor</th><th>Notice Generated</th><th>Delivered Prev</th><th>Delivered Latest</th><th>Diff Delivered</th><th>Hearing Prev</th><th>Hearing Latest</th><th>Diff Hearing</th><th>Lapse</th><th>Discrepancy Delivered</th><th>BLO Docs</th><th>BLO Letter</th></tr>";
-    rs.sort((a,b)=>a.ps-b.ps).forEach((r,i)=>{
+    rs.slice().sort((a,b)=>a.ps-b.ps).forEach((r,i)=>{
       h+="<tr class="+(r.latestHearing===0?"zero":"")+"><td>"+(i+1)+"</td><td>"+r.ps+"</td><td>"+esc(r.bloName)+"</td><td>"+esc(r.bloMobile)+"</td><td>"+esc(r.supervisor)+"</td><td class=num>"+n(r.noticeGenerated)+"</td><td class=num>"+n(r.prevDelivered)+"</td><td class=num>"+n(r.latestDelivered)+"</td><td class=num>"+n(r.latestDelivered-r.prevDelivered)+"</td><td class=num>"+n(r.prevHearing)+"</td><td class=num>"+n(r.latestHearing)+"</td><td class=num>"+n(r.latestHearing-r.prevHearing)+"</td><td class=num>"+n(r.hearingLapse)+"</td><td class=num>"+n(r.discrepancyDelivered)+"</td><td class=num>"+n(r.bloDocs)+"</td><td class=num>"+n(r.bloLetter)+"</td></tr>";
+    });
+    h+="</table>";
+  }
+  h+="</body></html>";
+  const w=window.open("","_blank","width=1600,height=1100");
+  if(!w){alert("Please allow pop-ups for PDF export.");return;}
+  w.document.write(h);w.document.close();setTimeout(()=>w.print(),700);
+}
+ps+"</td><td>"+esc(r.bloName)+"</td><td>"+esc(r.bloMobile)+"</td><td>"+esc(r.supervisor)+"</td><td class=num>"+n(r.noticeGenerated)+"</td><td class=num>"+n(r.prevDelivered)+"</td><td class=num>"+n(r.latestDelivered)+"</td><td class=num>"+n(r.latestDelivered-r.prevDelivered)+"</td><td class=num>"+n(r.prevHearing)+"</td><td class=num>"+n(r.latestHearing)+"</td><td class=num>"+n(r.latestHearing-r.prevHearing)+"</td><td class=num>"+n(r.hearingLapse)+"</td><td class=num>"+n(r.discrepancyDelivered)+"</td><td class=num>"+n(r.bloDocs)+"</td><td class=num>"+n(r.bloLetter)+"</td></tr>";
     });
     h+="</table>";
   }
