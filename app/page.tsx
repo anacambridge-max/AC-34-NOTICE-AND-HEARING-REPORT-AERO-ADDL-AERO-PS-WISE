@@ -154,9 +154,9 @@ function printReport(rows:Row[]){
   const topBlo=getTopBloKeys(rows);
   const grand=groups.reduce((g,z)=>({ps:g.ps+z.x.ps,gen:g.gen+z.x.gen,pd:g.pd+z.x.pd,ld:g.ld+z.x.ld,ph:g.ph+z.x.ph,lh:g.lh+z.x.lh,lapse:g.lapse+z.x.lapse,disc:g.disc+z.x.disc,docs:g.docs+z.x.docs,letter:g.letter+z.x.letter}),{ps:0,gen:0,pd:0,ld:0,ph:0,lh:0,lapse:0,disc:0,docs:0,letter:0});
   let h='<!doctype html><html><head><title>AC-34 MATIALA - NOTICE & HEARING REPORT</title><style>';
-  h+='@page{size:A4 landscape;margin:6mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;font-size:10px}';
+  h+='@page{size:A4 landscape;margin:6mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;font-size:10px}thead{display:table-header-group}tbody{display:table-row-group}';
   h+='h1{text-align:center;font-size:15px;margin:0 0 2px}h2{text-align:center;font-size:10px;margin:0 0 4px}.overall{border:1px solid #5c6f55;background:#e7f2df;text-align:center;padding:4px;font-weight:700;margin:4px 0 6px}.officer{font-size:11px;font-weight:700;margin:5px 0 2px;page-break-before:always;break-before:page}.officer.first{page-break-before:auto;break-before:auto}';
-  h+='table{border-collapse:collapse;width:100%;table-layout:fixed;margin:0 0 5px;page-break-inside:auto}tr{page-break-inside:avoid}th,td{border:1px solid #333;padding:3px 3.5px;text-align:center;vertical-align:middle;overflow:hidden;font-size:10px}th{font-size:9px;line-height:1.08;font-weight:800}.name{text-align:left}.num{text-align:right}';
+  h+='table{border-collapse:collapse;width:100%;table-layout:fixed;margin:0 0 5px;page-break-inside:auto}tr{page-break-inside:avoid}th,td{border:1px solid #333;padding:3px 3.5px;text-align:center;vertical-align:middle;overflow:hidden;font-size:10.5px}th{font-size:9px;line-height:1.08;font-weight:800}.officer{page-break-inside:avoid;break-inside:avoid-page;page-break-after:avoid;break-after:avoid-page}'.name{text-align:left}.num{text-align:right}';
   h+='.dark{background:#333;color:#fff}.blueHead{background:#0e4d7e;color:#fff}.greenHead{background:#dcebd5}.orangeHead{background:#9a5a00;color:#fff}.under{background:#b9d9ff!important;color:#063b73!important;font-weight:800}.underBadge{background:#2f73b8;color:#fff;padding:1px 3px;border-radius:2px;font-size:8px;font-weight:800}.zero{background:#f4b7bd!important;color:#8b0000!important;font-weight:800}.zeroBadge{background:#9b0000;color:#fff;padding:1px 3px;border-radius:2px;font-size:7px;font-weight:800}.total{background:#fff200!important;font-weight:800}.small{font-size:9px}</style></head><body>';
   h+='<h1>OFFICE OF THE ELECTORAL REGISTRATION OFFICER, AC-34, MATIALA</h1>';
   h+='<h2>SIR-2026 - PS-WISE (AERO-WISE) NOTICE & HEARING COMPARISON - Previous ECI vs Latest ECI</h2>';
@@ -177,6 +177,9 @@ function printReport(rows:Row[]){
     });
     h+='<tr class="total"><td colspan="5">Total - '+esc(g.aero)+', '+esc(g.rs[0]?.designation||'')+' ('+g.x.ps+' PS)</td><td>'+n(g.x.gen)+'</td><td>'+n(g.x.pd)+'</td><td>'+n(g.x.ld)+'</td><td>'+n(g.x.ld-g.x.pd)+'</td><td>'+n(g.x.ph)+'</td><td>'+n(g.x.lh)+'</td><td>'+n(g.x.lh-g.x.ph)+'</td><td>'+pct(g.x.lh,g.x.gen)+'</td><td>'+n(g.x.lapse)+'</td><td>'+n(g.x.disc)+'</td><td>'+n(g.x.docs)+'</td><td>'+n(g.x.letter)+'</td></tr></table>';
   });
+  h=h.replace(/<table><tr>/g,'<table><thead><tr>');
+  h=h.replace(/(<table><thead><tr>[\\s\\S]*?<\\/tr>)(?=<tr)/g,'$1</thead><tbody>');
+  h=h.replace(/<\\/table>/g,'</tbody></table>');
   h+='</body></html>';
   const w=window.open("","_blank","width=1600,height=1100"); if(!w){alert("Please allow pop-ups for PDF export.");return;} w.document.write(h); w.document.close(); setTimeout(()=>w.print(),700);
 }
