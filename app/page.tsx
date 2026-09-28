@@ -90,7 +90,18 @@ function parseMapping(parsed:{headers:string[];rows:any[][]}){
   return out;
 }
 
-function merge(master:Map<number,any>, previous:Map<nfunction printReport(allRows:Row[]) {
+function merge(master:Map<number,any>, previous:Map<number,any>, latest:Map<number,any>, blo:Map<number,any>){
+  return Array.from(master.entries()).sort((a,b)=>a[0]-b[0]).map(([ps,m])=>{
+    const p=previous.get(ps)||{}, l=latest.get(ps)||{}, b=blo.get(ps)||{};
+    const latestDelivered=l.latestDelivered??m.latestDelivered??0;
+    const prevDelivered=p.latestDelivered??m.prevDelivered??0;
+    const latestHearing=l.latestHearing??m.latestHearing??0;
+    const prevHearing=p.latestHearing??m.prevHearing??0;
+    return {...m,ps,noticeGenerated:l.noticeGenerated??m.noticeGenerated??0,prevDelivered,latestDelivered,prevHearing,latestHearing,hearingLapse:l.hearingLapse??m.hearingLapse??0,discrepancyDelivered:b.discrepancyDelivered??l.discrepancyDelivered??m.discrepancyDelivered??0,bloDocs:b.bloDocs??l.bloDocs??m.bloDocs??0,bloLetter:b.bloLetter??l.bloLetter??m.bloLetter??0};
+  });
+}
+
+function printReport(allRows:Row[]) {
   const groups=new Map<string,Row[]>();
   for(const r of allRows){const k=r.aero||"Unmapped";const a=groups.get(k)||[];a.push(r);groups.set(k,a);}
   const sum=(rs:Row[],k:keyof Row)=>rs.reduce((s,r)=>s+Number(r[k]||0),0);
@@ -113,7 +124,7 @@ function merge(master:Map<number,any>, previous:Map<nfunction printReport(allRow
     h+="<tr class="+(under.has(aero)?"under":"")+"><td>"+gi+"</td><td>"+esc(aero)+(under.has(aero)?" <span class=badge>TOP 3 UNDERPERFORMER</span>":"")+"</td><td>"+esc(rs[0]?.designation)+"</td><td class=num>"+n(x.ps)+"</td><td class=num>"+n(x.gen)+"</td><td class=num>"+n(x.pd)+"</td><td class=num>"+n(x.ld)+"</td><td class=num>"+n(x.ld-x.pd)+"</td><td class=num>"+n(x.ph)+"</td><td class=num>"+n(x.lh)+"</td><td class=num>"+n(x.lh-x.ph)+"</td><td class=num>"+n(x.lapse)+"</td><td class=num>"+pct(x.lh,x.lh+x.lapse)+"</td><td class=num>"+n(x.disc)+"</td><td class=num>"+n(x.docs)+"</td><td class=num>"+n(x.letter)+"</td></tr>";
   }
   h+="<tr class=grand><td colspan=3>GRAND TOTAL</td><td class=num>"+n(grand.ps)+"</td><td class=num>"+n(grand.gen)+"</td><td class=num>"+n(grand.pd)+"</td><td class=num>"+n(grand.ld)+"</td><td class=num>"+n(grand.ld-grand.pd)+"</td><td class=num>"+n(grand.ph)+"</td><td class=num>"+n(grand.lh)+"</td><td class=num>"+n(grand.lh-grand.ph)+"</td><td class=num>"+n(grand.lapse)+"</td><td class=num>"+pct(grand.lh,grand.lh+grand.lapse)+"</td><td class=num>"+n(grand.disc)+"</td><td class=num>"+n(grand.docs)+"</td><td class=num>"+n(grand.letter)+"</td></tr></table>";
-  h+="<div class=small>Blue rows = 3 AERO / Ad.AERO with the lowest disposal percentage (Hearing Held ÷ (Hearing Held + Hearing Lapse)). Red PS rows = Latest Hearing Held = 0.</div>";
+  h+="<div class=small>Blue rows = 3 AERO / Ad.AERO with the lowest disposal percentage. Red PS rows = Latest Hearing Held = 0.</div>";
   h+="<h2>PS-WISE AERO-WISE REPORT</h2>";
   for(const g of groupRows){
     const {aero,rs,x}=g;
@@ -126,15 +137,6 @@ function merge(master:Map<number,any>, previous:Map<nfunction printReport(allRow
   }
   h+="</body></html>";
   const w=window.open("","_blank","width=1600,height=1100");
-  if(!w){alert("Please allow pop-ups for PDF export.");return;}
-  w.document.write(h);w.document.close();setTimeout(()=>w.print(),700);
-}
-ps+"</td><td>"+esc(r.bloName)+"</td><td>"+esc(r.bloMobile)+"</td><td>"+esc(r.supervisor)+"</td><td class=num>"+n(r.noticeGenerated)+"</td><td class=num>"+n(r.prevDelivered)+"</td><td class=num>"+n(r.latestDelivered)+"</td><td class=num>"+n(r.latestDelivered-r.prevDelivered)+"</td><td class=num>"+n(r.prevHearing)+"</td><td class=num>"+n(r.latestHearing)+"</td><td class=num>"+n(r.latestHearing-r.prevHearing)+"</td><td class=num>"+n(r.hearingLapse)+"</td><td class=num>"+n(r.discrepancyDelivered)+"</td><td class=num>"+n(r.bloDocs)+"</td><td class=num>"+n(r.bloLetter)+"</td></tr>";
-    });
-    h+="</table>";
-  }
-  h+="</body></html>";
-  const w=window.open("","_blank","width=1400,height=1000");
   if(!w){alert("Please allow pop-ups for PDF export.");return;}
   w.document.write(h);w.document.close();setTimeout(()=>w.print(),700);
 }
