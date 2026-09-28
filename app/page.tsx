@@ -169,7 +169,7 @@ function printReport(rows:Row[]){
   h+='<div class="small">Blue rows = TOP 3 UNDERPERFORMER AERO/Ad.AERO. Red rows = ZERO HEARING HELD. In every AERO section, the TOP 3 UNDERPERFORMER BLOs are blue.</div>';
 
   groups.forEach((g,gi)=>{
-    h+='<div class="officer '+(gi===0?'first':'')+'">'+String(gi+1)+'. '+esc(g.aero)+', '+esc(g.rs[0]?.designation||'')+' (Mobile: '+esc(g.rs[0]?.aeroMobile||'')+') — '+g.x.ps+' PS | Notice Generated: '+n(g.x.gen)+'</div>';
+    h+='<div class="officer '+(gi===0?'first':'')+'">'+String(gi+1)+'. '+esc(g.aero)+', '+esc(g.rs[0]?.designation||'')+' - '+g.x.ps+' PS | Notice Generated: '+n(g.x.gen)+' | Hearings Held: '+n(g.x.lh)+' | % Held: '+pct(g.x.lh,g.x.gen)+(topAeros.has(g.aero)?' <span class="underBadge">TOP 3 UNDERPERFORMER</span>':'')+'</div>';
     h+='<table><thead><tr><th class="dark">S.No.</th><th class="dark">P.S. No.</th><th class="dark">BLO Name</th><th class="dark">BLO Mobile No.</th><th class="dark">BLO Supervisor</th><th class="dark">Notice<br>Generated</th><th class="blueHead">Notice Deliv.<br>Prev</th><th class="blueHead">Notice Deliv.<br>Latest</th><th class="blueHead">Diff.</th><th class="blueHead">Hearing Held<br>Prev</th><th class="blueHead">Hearing Held<br>Latest</th><th class="blueHead">Diff.</th><th class="greenHead">% Held<br>(of Gen.)</th><th class="dark">Hearing Lapse</th><th class="orangeHead">Discrep. Notices<br>Delivered</th><th class="orangeHead">BLO Docs<br>Uploaded (No Mapping)</th><th class="orangeHead">BLO Letter<br>Uploaded</th></tr>';
     g.rs.slice().sort((a,b)=>a.ps-b.ps).forEach((r,i)=>{
       const isZero=r.latestHearing===0; const isUnder=topBlo.has(r.aero+'|'+r.bloName+'|'+r.ps);
