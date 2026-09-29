@@ -128,7 +128,13 @@ function merge(master:Map<number,any>, previous:Map<number,any>, latest:Map<numb
     const prevDelivered=p.latestDelivered??m.prevDelivered??0;
     const latestHearing=l.latestHearing??m.latestHearing??0;
     const prevHearing=p.latestHearing??m.prevHearing??0;
-    return {...m,ps,noticeGenerated:l.noticeGenerated??m.noticeGenerated??0,prevDelivered,latestDelivered,prevHearing,latestHearing,hearingLapse:l.hearingLapse??m.hearingLapse??0,discrepancyDelivered:b.discrepancyDelivered??l.discrepancyDelivered??m.discrepancyDelivered??0,bloDocs:b.bloDocs??0,bloLetter:b.bloLetter??0};
+    // The latest ECI status sheet is the authoritative source for these three
+    // columns when present: Discrep. Notices Delivered, BLO Docs Uploaded,
+    // and BLO Letter Uploaded. The separate BLO/Other file remains a fallback.
+    return {...m,ps,noticeGenerated:l.noticeGenerated??m.noticeGenerated??0,prevDelivered,latestDelivered,prevHearing,latestHearing,hearingLapse:l.hearingLapse??m.hearingLapse??0,
+      discrepancyDelivered:l.discrepancyDelivered??b.discrepancyDelivered??m.discrepancyDelivered??0,
+      bloDocs:l.bloDocs??b.bloDocs??0,
+      bloLetter:l.bloLetter??b.bloLetter??0};
   });
 }
 
