@@ -103,6 +103,7 @@ function parseMetricFile(parsed:{headers:string[];rows:any[][]}, kind:"eci"|"blo
     if(letterI>=0)item.bloLetter=num(r[letterI]);
     out.set(ps,item);
   }
+  (out as any).acTotals=parseAcTotals(rows);
   return out;
 }
 
@@ -175,7 +176,7 @@ function getTopBloKeys(rows:Row[]){
   return result;
 }
 
-function printReport(rows:Row[]){
+function printReport(rows:Row[], sourceTotals?:{totalDocs?:number,totalDisc?:number,totalLetter?:number}){
   // Snapshot the CURRENT dashboard state at the exact moment PDF export is clicked.
   // This prevents the print window from ever depending on a stale reference after an Excel refresh.
   const exportRows:Row[]=rows.map(r=>({...r}));
@@ -183,6 +184,9 @@ function printReport(rows:Row[]){
   const topAeros=getTopAeros(exportRows);
   const topBlo=getTopBloKeys(exportRows);
   const grand=groups.reduce((g,z)=>({ps:g.ps+z.x.ps,gen:g.gen+z.x.gen,pd:g.pd+z.x.pd,ld:g.ld+z.x.ld,ph:g.ph+z.x.ph,lh:g.lh+z.x.lh,lapse:g.lapse+z.x.lapse,disc:g.disc+z.x.disc,docs:g.docs+z.x.docs,letter:g.letter+z.x.letter}),{ps:0,gen:0,pd:0,ld:0,ph:0,lh:0,lapse:0,disc:0,docs:0,letter:0});
+  if(sourceTotals?.totalDocs!=null) grand.docs=sourceTotals.totalDocs;
+  if(sourceTotals?.totalDisc!=null) grand.disc=sourceTotals.totalDisc;
+  if(sourceTotals?.totalLetter!=null) grand.letter=sourceTotals.totalLetter;
   let h='<!doctype html><html><head><title>AC-34 MATIALA - NOTICE & HEARING REPORT - CURRENT DATA</title><style>';
   h+='@page{size:A4 landscape !important;margin:4mm 4mm 5mm 4mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}html{width:100%;background:#fff}body{font-family:Arial,Helvetica,sans-serif;color:#111;background:#fff;margin:0;width:100%;font-size:9px;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}thead{display:table-header-group}tbody{display:table-row-group}@media print{html,body{width:100%;height:auto;background:#fff;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.reportPage{page-break-before:always;break-before:page}.summaryEnd{page-break-after:always;break-after:page}}';
   h+='h1{text-align:center;font-size:13px;margin:0 0 1px}h2{text-align:center;font-size:8px;margin:0 0 3px}.overall{border:1px solid #5c6f55;background:#e7f2df;text-align:center;padding:3px;font-weight:700;margin:3px 0 4px}.detailTitle{border:1px solid #5c6f55;background:#e7f2df;text-align:center;padding:3px;font-weight:800;margin:2px 0 2px}.detailStats{border:1px solid #5c6f55;background:#e7f2df;text-align:center;padding:3px;font-weight:700;margin:0 0 4px}.reportPage{page-break-before:always;break-before:page}.officer{font-size:9px;font-weight:700;margin:3px 0 2px}';
@@ -216,6 +220,7 @@ export default function Page(){
   const [previous,setPrevious]=useState<Map<number,any>>(new Map());
   const [latest,setLatest]=useState<Map<number,any>>(new Map());
   const [blo,setBlo]=useState<Map<number,any>>(new Map());
+  const [sourceTotals,setSourceTotals]=useState<{totalDocs?:number,totalDisc?:number,totalLetter?:number}>({});
   const [filterAero,setFilterAero]=useState("ALL");
   const [filterSup,setFilterSup]=useState("ALL");
   const [search,setSearch]=useState("");
@@ -224,7 +229,7 @@ export default function Page(){
   useEffect(()=>{try{const saved=localStorage.getItem("ac34-master-mapping");if(saved){const arr=JSON.parse(saved);setMaster(new Map(arr));}}catch{}},[]);
   useEffect(()=>{if(master.size)localStorage.setItem("ac34-master-mapping",JSON.stringify(Array.from(master.entries())));},[master]);
 
-  const load=(setter:any,kind:"eci"|"blo")=>(e:React.ChangeEvent<HTMLInputElement>)=>{const f=e.target.files?.[0];if(!f)return;setError("");readRows(f).then(p=>{const parsed=kind==="eci"?parseMetricFile(p,"eci"):parseMetricFile(p,"blo");setter(parsed);}).catch(err=>setError(String(err)));};
+  const load=(setter:any,kind:"eci"|"blo")=>(e:React.ChangeEvent<HTMLInputElement>)=>{const f=e.target.files?.[0];if(!f)return;setError("");readRows(f).then(p=>{const parsed:any=kind==="eci"?parseMetricFile(p,"eci"):parseMetricFile(p,"blo");if(kind==="eci" && parsed.acTotals)setSourceTotals(parsed.acTotals);setter(parsed);}).catch(err=>setError(String(err)));};
 
   useEffect(()=>{if(master.size) setRows(merge(master,previous,latest,blo));},[master,previous,latest,blo]);
 
