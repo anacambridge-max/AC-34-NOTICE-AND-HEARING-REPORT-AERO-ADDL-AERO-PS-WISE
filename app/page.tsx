@@ -107,7 +107,7 @@ function merge(master:Map<number,any>, previous:Map<number,any>, latest:Map<numb
     const prevDelivered=p.latestDelivered??m.prevDelivered??0;
     const latestHearing=l.latestHearing??m.latestHearing??0;
     const prevHearing=p.latestHearing??m.prevHearing??0;
-    return {...m,ps,noticeGenerated:l.noticeGenerated??m.noticeGenerated??0,prevDelivered,latestDelivered,prevHearing,latestHearing,hearingLapse:l.hearingLapse??m.hearingLapse??0,discrepancyDelivered:b.discrepancyDelivered??l.discrepancyDelivered??m.discrepancyDelivered??0,bloDocs:b.bloDocs??l.bloDocs??m.bloDocs??0,bloLetter:b.bloLetter??l.bloLetter??m.bloLetter??0};
+    return {...m,ps,noticeGenerated:l.noticeGenerated??m.noticeGenerated??0,prevDelivered,latestDelivered,prevHearing,latestHearing,hearingLapse:l.hearingLapse??m.hearingLapse??0,discrepancyDelivered:b.discrepancyDelivered??l.discrepancyDelivered??m.discrepancyDelivered??0,bloDocs:b.bloDocs??0,bloLetter:b.bloLetter??0};
   });
 }
 
