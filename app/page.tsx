@@ -16,7 +16,7 @@ const aliases = {
   hearing:["hearings held","hearing held","hearing done","hearing","hearing held by blo","no of hearings held"],
   lapse:["hearing date lapsed","hearing lapsed","lapsed","hearing lapse","date lapsed"],
   docs:["documents uploaded by blo","documents uploaded by blo (no mapping)","documents uploaded","docs uploaded by blo","blo docs uploaded","blo docs uploaded no mapping","blo documents","blo docs","documents uploaded by blo no mapping","no of documents uploaded by blo","document uploaded by blo"],
-  discrepancy:["discrep notices delivered","discrepancy notices delivered","discrep notices delivery","anomaly notices delivered","anomaly delivered","discrepancy delivered","discrepancy/anomaly delivered","discrepancy + anomaly delivered","no of discrepancy notices delivered","no of anomaly notices delivered","discrepancy notice delivered","discrep notices delivered"],
+  discrepancy:["discrep notices delivered","discrepancy notices delivered","discrep notices delivery","anomaly notices delivered","anomaly delivered","discrepancy delivered","discrepancy/anomaly delivered","discrepancy + anomaly delivered","no of discrepancy notices delivered","no of anomaly notices delivered","discrepancy notice delivered","discrep notices delivered","notice delivered by blo of discrepancies","notice delivered by blo of discrepancy","notice delivered by blo"],
   letter:["blo letter uploaded","blo letters uploaded","blo letter","blo letter uploaded by blo","letters uploaded by blo","no of blo letter uploaded","blo letters","blo letter uploaded no mapping"]
 };
 
