@@ -152,7 +152,7 @@ function printReport(rows:Row[]){
   // Snapshot the CURRENT dashboard state at the exact moment PDF export is clicked.
   // This prevents the print window from ever depending on a stale reference after an Excel refresh.
   const exportRows:Row[]=rows.map(r=>({...r}));
-  const groups=buildGroups(exportRows);
+  const groups=buildGroups(exportRows).sort((a,b)=>a.aero.localeCompare(b.aero));
   const topAeros=getTopAeros(exportRows);
   const topBlo=getTopBloKeys(exportRows);
   const grand=groups.reduce((g,z)=>({ps:g.ps+z.x.ps,gen:g.gen+z.x.gen,pd:g.pd+z.x.pd,ld:g.ld+z.x.ld,ph:g.ph+z.x.ph,lh:g.lh+z.x.lh,lapse:g.lapse+z.x.lapse,disc:g.disc+z.x.disc,docs:g.docs+z.x.docs,letter:g.letter+z.x.letter}),{ps:0,gen:0,pd:0,ld:0,ph:0,lh:0,lapse:0,disc:0,docs:0,letter:0});
