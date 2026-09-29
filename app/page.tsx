@@ -78,6 +78,46 @@ async function readRows(file:File){
   return {headers, rows:raw.slice(headerIndex+1)};
 }
 
+function parseAcTotals(headers:string[], rows:any[][]){
+  const psI=findCol(headers,aliases.ps);
+  const docsI=findDataCol(headers,aliases.docs,[psI]);
+  const discI=findDataCol(headers,aliases.discrepancy,[psI]);
+  const letterI=findDataCol(headers,aliases.letter,[psI]);
+
+  // Prefer the explicit AC TOTAL / GRAND TOTAL row from the uploaded
+  // BLO/Letter workbook. This is the authoritative total for these metrics.
+  const totalRow=rows.find(r=>{
+    const text=r.map((v:any)=>norm(v)).join(" | ");
+    return text.includes("ac total") || text.includes("grand total") || text==="total" || text.startsWith("total ");
+  });
+
+  const value=(row:any[], idx:number)=>{
+    if(idx<0 || !row) return undefined;
+    const v=num(row[idx]);
+    return Number.isFinite(v)?v:undefined;
+  };
+
+  if(totalRow){
+    return {
+      totalDocs:value(totalRow,docsI),
+      totalDisc:value(totalRow,discI),
+      totalLetter:value(totalRow,letterI)
+    };
+  }
+
+  // Fallback: if the workbook has no explicit total row, sum the PS-wise
+  // values rather than using an unrelated ECI total.
+  let totalDocs=0,totalDisc=0,totalLetter=0;
+  for(const r of rows){
+    const ps=psI>=0?Math.round(num(r[psI])):0;
+    if(!ps) continue;
+    if(docsI>=0) totalDocs+=num(r[docsI]);
+    if(discI>=0) totalDisc+=num(r[discI]);
+    if(letterI>=0) totalLetter+=num(r[letterI]);
+  }
+  return {totalDocs,totalDisc,totalLetter};
+}
+
 function parseMetricFile(parsed:{headers:string[];rows:any[][]}, kind:"eci"|"blo"){
   const {headers,rows}=parsed;
   const psI=findCol(headers,aliases.ps);
@@ -103,7 +143,7 @@ function parseMetricFile(parsed:{headers:string[];rows:any[][]}, kind:"eci"|"blo
     if(letterI>=0)item.bloLetter=num(r[letterI]);
     out.set(ps,item);
   }
-  (out as any).acTotals=parseAcTotals(rows);
+  (out as any).acTotals=parseAcTotals(headers,rows);
   return out;
 }
 
