@@ -129,13 +129,13 @@ function merge(master:Map<number,any>, previous:Map<number,any>, latest:Map<numb
     const prevDelivered=p.latestDelivered??m.prevDelivered??0;
     const latestHearing=l.latestHearing??m.latestHearing??0;
     const prevHearing=p.latestHearing??m.prevHearing??0;
-    // The latest ECI status sheet is the authoritative source for these three
-    // columns when present: Discrep. Notices Delivered, BLO Docs Uploaded,
-    // and BLO Letter Uploaded. The separate BLO/Other file remains a fallback.
+    // The uploaded BLO/Other workbook is the authoritative PS-wise source
+    // for BLO document and BLO letter metrics. ECI remains the source for
+    // notice/hearing metrics.
     return {...m,ps,noticeGenerated:l.noticeGenerated??m.noticeGenerated??0,prevDelivered,latestDelivered,prevHearing,latestHearing,hearingLapse:l.hearingLapse??m.hearingLapse??0,
-      discrepancyDelivered:l.discrepancyDelivered??b.discrepancyDelivered??m.discrepancyDelivered??0,
-      bloDocs:l.bloDocs??b.bloDocs??0,
-      bloLetter:l.bloLetter??b.bloLetter??0};
+      discrepancyDelivered:b.discrepancyDelivered??l.discrepancyDelivered??m.discrepancyDelivered??0,
+      bloDocs:b.bloDocs??l.bloDocs??0,
+      bloLetter:b.bloLetter??l.bloLetter??m.bloLetter??0};
   });
 }
 
@@ -229,7 +229,7 @@ export default function Page(){
   useEffect(()=>{try{const saved=localStorage.getItem("ac34-master-mapping");if(saved){const arr=JSON.parse(saved);setMaster(new Map(arr));}}catch{}},[]);
   useEffect(()=>{if(master.size)localStorage.setItem("ac34-master-mapping",JSON.stringify(Array.from(master.entries())));},[master]);
 
-  const load=(setter:any,kind:"eci"|"blo")=>(e:React.ChangeEvent<HTMLInputElement>)=>{const f=e.target.files?.[0];if(!f)return;setError("");readRows(f).then(p=>{const parsed:any=kind==="eci"?parseMetricFile(p,"eci"):parseMetricFile(p,"blo");if(kind==="eci" && parsed.acTotals)setSourceTotals(parsed.acTotals);setter(parsed);}).catch(err=>setError(String(err)));};
+  const load=(setter:any,kind:"eci"|"blo")=>(e:React.ChangeEvent<HTMLInputElement>)=>{const f=e.target.files?.[0];if(!f)return;setError("");readRows(f).then(p=>{const parsed:any=kind==="eci"?parseMetricFile(p,"eci"):parseMetricFile(p,"blo");if(kind==="blo" && parsed.acTotals)setSourceTotals(parsed.acTotals);setter(parsed);}).catch(err=>setError(String(err)));};
 
   useEffect(()=>{if(master.size) setRows(merge(master,previous,latest,blo));},[master,previous,latest,blo]);
 
