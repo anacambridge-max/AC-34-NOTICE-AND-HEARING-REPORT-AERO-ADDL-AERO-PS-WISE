@@ -2,3 +2,6 @@
 .under{background:#173f68!important;color:#d9ecff!important;font-weight:800}.under td{background:#173f68!important;color:#d9ecff!important}.underBadge{display:inline-block;margin-left:6px;padding:3px 6px;border-radius:5px;background:#2f73b8;color:#fff;font-size:9px;font-weight:800}
 
 .zeroBadge{display:inline-block;margin-left:5px;padding:2px 5px;border-radius:4px;background:#9b0000;color:#fff;font-size:9px;font-weight:800}.underBadge{display:inline-block;margin-left:6px;padding:3px 6px;border-radius:5px;background:#2f73b8;color:#fff;font-size:9px;font-weight:800}
+
+.table.consolidated th:nth-child(12),.table.consolidated td:nth-child(12){background:#dcebd5!important;color:#111!important;font-weight:800}
+.table.consolidated tr.under td:nth-child(12){background:#dcebd5!important;color:#111!important}
