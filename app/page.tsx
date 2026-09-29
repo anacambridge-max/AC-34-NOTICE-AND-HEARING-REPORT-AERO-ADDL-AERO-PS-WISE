@@ -34,6 +34,26 @@ function findCol(headers:string[], names:string[]){
   return -1;
 }
 
+function findDataCol(headers:string[], names:string[], exclude:number[]=[]){
+  const hs=headers.map(norm);
+  const blocked=new Set(exclude);
+  // For metric columns, prefer exact header matches only. This prevents
+  // fuzzy matching from accidentally selecting the PS No. column.
+  for(const n of names){
+    const target=norm(n);
+    const i=hs.findIndex((h,idx)=>!blocked.has(idx) && h===target);
+    if(i>=0)return i;
+  }
+  // Controlled fuzzy fallback, never allowed to use an excluded column.
+  for(const n of names){
+    const target=norm(n);
+    if(target.length<5) continue;
+    const i=hs.findIndex((h,idx)=>!blocked.has(idx) && (h.includes(target) || target.includes(h)));
+    if(i>=0)return i;
+  }
+  return -1;
+}
+
 async function readRows(file:File){
   const buf=await file.arrayBuffer();
   const wb=XLSX.read(buf,{type:"array",cellDates:true});
@@ -65,9 +85,10 @@ function parseMetricFile(parsed:{headers:string[];rows:any[][]}, kind:"eci"|"blo
   const delI=findCol(headers,aliases.delivered);
   const hearI=findCol(headers,aliases.hearing);
   const lapseI=findCol(headers,aliases.lapse);
-  const docsI=findCol(headers,aliases.docs);
-  const discI=findCol(headers,aliases.discrepancy);
-  const letterI=findCol(headers,aliases.letter);
+  // BLO/Discrepancy metrics must NEVER resolve to the PS No. column.
+  const docsI=findDataCol(headers,aliases.docs,[psI]);
+  const discI=findDataCol(headers,aliases.discrepancy,[psI]);
+  const letterI=findDataCol(headers,aliases.letter,[psI]);
   const out=new Map<number,any>();
   for(const r of rows){
     if(psI<0) continue;
