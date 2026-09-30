@@ -274,6 +274,16 @@ export default function Page(){
   const [filterSup,setFilterSup]=useState("ALL");
   const [search,setSearch]=useState("");
   const [error,setError]=useState("");
+  const [filterDesignation,setFilterDesignation]=useState("ALL");
+  const [filterBlo,setFilterBlo]=useState("ALL");
+  const [filterHearing,setFilterHearing]=useState("ALL");
+  const [filterZero,setFilterZero]=useState("ALL");
+  const [filterHeld,setFilterHeld]=useState("ALL");
+  const [filterLapse,setFilterLapse]=useState("ALL");
+  const [minPct,setMinPct]=useState("");
+  const [maxPct,setMaxPct]=useState("");
+  const [selectedPs,setSelectedPs]=useState<number|null>(null);
+  const [columns,setColumns]=useState<Record<string,boolean>>({ps:true,aero:true,designation:true,supervisor:true,bloName:true,bloMobile:true,gen:true,pd:true,ld:true,diffDel:true,ph:true,lh:true,diffHear:true,pct:true,lapse:true});
 
   useEffect(()=>{try{const saved=localStorage.getItem("ac34-master-mapping");if(saved){const arr=JSON.parse(saved);setMaster(new Map(arr));}}catch{}},[]);
   useEffect(()=>{if(master.size)localStorage.setItem("ac34-master-mapping",JSON.stringify(Array.from(master.entries())));},[master]);
@@ -284,10 +294,34 @@ export default function Page(){
 
   const aeros=useMemo(()=>["ALL",...Array.from(new Set(rows.map(r=>r.aero).filter(Boolean)))],[rows]);
   const sups=useMemo(()=>["ALL",...Array.from(new Set(rows.map(r=>r.supervisor).filter(Boolean)))],[rows]);
-  const shown=useMemo(()=>rows.filter(r=>(filterAero==="ALL"||r.aero===filterAero)&&(filterSup==="ALL"||r.supervisor===filterSup)&&((r.ps+" "+r.bloName+" "+r.supervisor+" "+r.aero).toLowerCase().includes(search.toLowerCase()))),[rows,filterAero,filterSup,search]);
+  const designations=useMemo(()=>["ALL",...Array.from(new Set(rows.map(r=>r.designation).filter(Boolean))).sort()],[rows]);
+  const blos=useMemo(()=>["ALL",...Array.from(new Set(rows.map(r=>r.bloName).filter(Boolean))).sort()],[rows]);
+  const pendingFor=(r:Row)=>Math.max(r.latestDelivered-r.latestHearing-r.hearingLapse,0);
+  const disposePct=(r:Row)=>(r.latestHearing+r.hearingLapse)?r.latestHearing/(r.latestHearing+r.hearingLapse)*100:0;
+  const hearingStatus=(r:Row)=>r.latestHearing===0?"ZERO HEARING":pendingFor(r)>0?"PENDING":"DISPOSED";
+  const shown=useMemo(()=>rows.filter(r=>{
+    const hp=r.noticeGenerated?(r.latestHearing/r.noticeGenerated)*100:0;
+    const q=search.toLowerCase();
+    if(filterAero!=="ALL"&&r.aero!==filterAero)return false;
+    if(filterSup!=="ALL"&&r.supervisor!==filterSup)return false;
+    if(filterDesignation!=="ALL"&&r.designation!==filterDesignation)return false;
+    if(filterBlo!=="ALL"&&r.bloName!==filterBlo)return false;
+    if(filterHearing!=="ALL"&&hearingStatus(r)!==filterHearing)return false;
+    if(filterZero==="YES"&&r.latestHearing!==0)return false;
+    if(filterZero==="NO"&&r.latestHearing===0)return false;
+    if(filterHeld==="YES"&&r.latestHearing<=0)return false;
+    if(filterHeld==="NO"&&r.latestHearing>0)return false;
+    if(filterLapse==="YES"&&r.hearingLapse<=0)return false;
+    if(filterLapse==="NO"&&r.hearingLapse>0)return false;
+    if(minPct!==""&&hp<Number(minPct))return false;
+    if(maxPct!==""&&hp>Number(maxPct))return false;
+    if(q&&!((r.ps+" "+r.bloName+" "+r.supervisor+" "+r.aero+" "+r.designation).toLowerCase().includes(q)))return false;
+    return true;
+  }),[rows,filterAero,filterSup,filterDesignation,filterBlo,filterHearing,filterZero,filterHeld,filterLapse,minPct,maxPct,search]);
   const totals=useMemo(()=>rows.reduce((a,r)=>({gen:a.gen+r.noticeGenerated,del:a.del+r.latestDelivered,ph:a.ph+r.prevHearing,lh:a.lh+r.latestHearing,zero:a.zero+(r.latestHearing===0?1:0)}),{gen:0,del:0,ph:0,lh:0,zero:0}),[rows]);
   const officerSummary=useMemo(()=>{const m=new Map<string,any>();for(const r of rows){const k=r.aero||"Unmapped";const x=m.get(k)||{aero:k,designation:r.designation,ps:0,gen:0,del:0,dh:0,zero:0};x.ps++;x.gen+=r.noticeGenerated;x.del+=r.latestDelivered;x.dh+=r.latestHearing;x.zero+=r.latestHearing===0?1:0;m.set(k,x);}return Array.from(m.values()).sort((a,b)=>reportAeroIndex(a.aero)-reportAeroIndex(b.aero));},[rows]);
-  const supervisorSummary=useMemo(()=>{const m=new Map<string,any>();for(const r of rows){const k=r.supervisor||"Unmapped";const x=m.get(k)||{name:k,ps:0,hearing:0,zero:0};x.ps++;x.hearing+=r.latestHearing;x.zero+=r.latestHearing===0?1:0;m.set(k,x);}return Array.from(m.values()).sort((a,b)=>a.name.localeCompare(b.name));},[rows]);
+  const supervisorSummary=useMemo(()=>{const m=new Map<string,any>();for(const r of rows){const k=r.supervisor||"Unmapped";const x=m.get(k)||{name:k,aeros:new Set<string>(),ps:0,blos:new Set<string>(),gen:0,del:0,hearing:0,lapse:0,zero:0};x.aeros.add(r.aero);x.ps++;x.blos.add(r.bloName);x.gen+=r.noticeGenerated;x.del+=r.latestDelivered;x.hearing+=r.latestHearing;x.lapse+=r.hearingLapse;x.zero+=r.latestHearing===0?1:0;m.set(k,x);}return Array.from(m.values()).map(x=>({...x,aero:Array.from(x.aeros).join(", "),blosCount:x.blos.size,pending:Math.max(x.del-x.hearing-x.lapse,0),heldPct:x.gen?x.hearing/x.gen*100:0,dispose:x.hearing+x.lapse?x.hearing/(x.hearing+x.lapse)*100:0})).sort((a,b)=>a.name.localeCompare(b.name));},[rows]);
+  const zeroRows=useMemo(()=>rows.filter(r=>r.latestHearing===0),[rows]);
 
   const exportCsv=()=>{const data=shown.map(r=>({PS:r.ps,AERO:r.aero,Designation:r.designation,"BLO Supervisor":r.supervisor,"BLO Name":r.bloName,"BLO Mobile":r.bloMobile,"Notice Generated":r.noticeGenerated,"Delivered Previous":r.prevDelivered,"Delivered Latest":r.latestDelivered,"Delivered Difference":r.latestDelivered-r.prevDelivered,"Hearing Previous":r.prevHearing,"Hearing Latest":r.latestHearing,"Hearing Difference":r.latestHearing-r.prevHearing,"Hearing Lapse":r.hearingLapse}));const ws=XLSX.utils.json_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Dashboard");XLSX.writeFile(wb,"AC34_Dashboard_Export.xlsx");};
 
