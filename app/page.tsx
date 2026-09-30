@@ -207,82 +207,128 @@ function buildGroups(rows:Row[]){
 }
 
 function printReport(rows:Row[], sourceTotals?:{totalDocs?:number,totalDisc?:number,totalLetter?:number}){
-  // Snapshot the CURRENT dashboard state at the exact moment PDF export is clicked.
-  // This prevents the print window from ever depending on a stale reference after an Excel refresh.
+  // PDF-only presentation layer. Dashboard state/calculations remain untouched.
   const exportRows:Row[]=rows.map(r=>({...r}));
   const groups=buildGroups(exportRows);
-  const grand=groups.reduce((g,z)=>({ps:g.ps+z.x.ps,gen:g.gen+z.x.gen,pd:g.pd+z.x.pd,ld:g.ld+z.x.ld,ph:g.ph+z.x.ph,lh:g.lh+z.x.lh,lapse:g.lapse+z.x.lapse,disc:g.disc+z.x.disc,docs:g.docs+z.x.docs,letter:g.letter+z.x.letter}),{ps:0,gen:0,pd:0,ld:0,ph:0,lh:0,lapse:0,disc:0,docs:0,letter:0});
+  const grand=groups.reduce((g,z)=>({
+    ps:g.ps+z.x.ps,gen:g.gen+z.x.gen,pd:g.pd+z.x.pd,ld:g.ld+z.x.ld,
+    ph:g.ph+z.x.ph,lh:g.lh+z.x.lh,lapse:g.lapse+z.x.lapse,
+    disc:g.disc+z.x.disc,docs:g.docs+z.x.docs,letter:g.letter+z.x.letter
+  }),{ps:0,gen:0,pd:0,ld:0,ph:0,lh:0,lapse:0,disc:0,docs:0,letter:0});
   if(sourceTotals?.totalDocs!=null) grand.docs=sourceTotals.totalDocs;
   if(sourceTotals?.totalDisc!=null) grand.disc=sourceTotals.totalDisc;
   if(sourceTotals?.totalLetter!=null) grand.letter=sourceTotals.totalLetter;
-  let h='<!doctype html><html><head><title>AC-34 MATIALA - NOTICE & HEARING REPORT - CURRENT DATA</title><style>.attentionRow td{background:#b9d9ff!important;color:#111!important;font-weight:400!important}.attentionRow td:nth-child(13){background:#dcebd5!important;color:#111!important;font-weight:400!important}.attentionRow td:nth-child(12){font-weight:900!important}.officerAttentionRow td{background:#b9d9ff!important;color:#111!important;font-weight:700!important}.officerAttentionCell{background:#b9d9ff!important;color:#111!important;font-weight:700!important}.attentionBadge{display:inline-block;background:#0e4d7e;color:#fff;font-size:7px;font-weight:900;padding:1px 3px;margin-top:2px;border-radius:1px}.officerAttentionRow td:nth-child(12){background:#dcefd8!important;color:#111!important;font-weight:700!important}.attentionCell{background:transparent!important;color:inherit!important;font-weight:inherit!important}.attentionRow td:first-child{border-left:4px solid #1976d2!important}.attentionCaption{caption-side:top;background:#0e4d7e;color:#fff;border:1px solid #2563eb;font-size:9px;font-weight:900;text-align:center;padding:3px;margin:0}.detailTable td:nth-child(12){font-weight:900!important}';
-  h+='@page{size:A4 landscape !important;margin:4mm 4mm 7mm 4mm}.pageFooter{display:none}@media print{.pageFooter{display:block;position:fixed;left:0;right:0;bottom:-4mm;text-align:center;font-size:6.5px;color:#555}.pageFooter .pageNum:after{content:counter(page)}}*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}html{width:100%;background:#fff}body{font-family:Arial,Helvetica,sans-serif;color:#111;background:#fff;margin:0;width:100%;font-size:9px;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}thead{display:table-header-group}tbody{display:table-row-group}@media print{html,body{width:100%;height:auto;background:#fff;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.reportPage{page-break-before:always;break-before:page}.summaryEnd{page-break-after:always;break-after:page}}';
-  h+='h1{text-align:center;font-size:13px;margin:0 0 1px}h2{text-align:center;font-size:8px;margin:0 0 3px}.hearingRateTitle{border:1px solid #5c6f55;background:#e7f2df;text-align:center;padding:3px;font-weight:900;margin:4px 0 2px}.hearingRateTable th{background:#0e4d7e;color:#fff}.hearingRateTable td{font-weight:700}.hearingRateTable td:last-child{background:#dcebd5;font-weight:900}.overall{border:1px solid #5c6f55;background:#e7f2df;text-align:center;padding:3px;font-weight:700;margin:3px 0 4px}.execTitle{font-size:16px;font-weight:800;text-align:center;margin:2px 0 1px}.execSub{text-align:center;font-size:9px;font-weight:700;margin:0 0 5px}.execGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:4px 0 6px}.execCard{border:1px solid #777;background:#f7f9fb;padding:4px 5px;text-align:center;min-height:29px}.execCard .k{font-size:6.5px;font-weight:700;color:#444}.execCard .v{font-size:11px;font-weight:800;margin-top:2px}.legend{font-size:7px;text-align:center;margin:4px 0 5px;font-weight:700}.legendRed{display:inline-block;background:#f4b7bd;color:#8b0000;border:1px solid #b66;padding:2px 5px}.detailTitle{border:1px solid #5c6f55;background:#e7f2df;text-align:left;padding:3px 6px;font-weight:800;margin:2px 0 2px}.detailOfficerName{font-size:14px;font-weight:900;text-align:left;display:inline-block;margin-right:5px}.detailStats{border:1px solid #5c6f55;background:#e7f2df;text-align:center;padding:3px;font-weight:700;margin:0 0 4px}.reportPage{page-break-before:always;break-before:page}.officer{font-size:9px;font-weight:700;margin:3px 0 2px}';
-  h+='table{border-collapse:collapse;width:100%;table-layout:fixed;margin:0 0 3px;page-break-inside:auto}tr{page-break-inside:avoid}th,td{border:1px solid #333;padding:2px 2.5px;text-align:center;vertical-align:middle;overflow:hidden;font-size:10.5px;line-height:1.08}th{font-size:8.5px;line-height:1.08;font-weight:800}.num{white-space:nowrap}.summaryTable th:nth-child(1),.summaryTable td:nth-child(1){width:3%}.summaryTable th:nth-child(2),.summaryTable td:nth-child(2){width:12%}.summaryTable th:nth-child(3),.summaryTable td:nth-child(3){width:7%}.summaryTable th:nth-child(4),.summaryTable td:nth-child(4){width:5%}.summaryTable th:nth-child(5),.summaryTable td:nth-child(5){width:8%}.summaryTable th:nth-child(6),.summaryTable td:nth-child(6),.summaryTable th:nth-child(7),.summaryTable td:nth-child(7){width:7%}.summaryTable th:nth-child(8),.summaryTable td:nth-child(8){width:5%}.summaryTable th:nth-child(9),.summaryTable td:nth-child(9),.summaryTable th:nth-child(10),.summaryTable td:nth-child(10){width:7%}.summaryTable th:nth-child(11),.summaryTable td:nth-child(11){width:5%}.summaryTable th:nth-child(12),.summaryTable td:nth-child(12){width:6%}.summaryTable th:nth-child(13),.summaryTable td:nth-child(13){width:6%}.summaryTable th:nth-child(14),.summaryTable td:nth-child(14){width:7%}.summaryTable th:nth-child(15),.summaryTable td:nth-child(15){width:8%}.summaryTable th:nth-child(16),.summaryTable td:nth-child(16){width:7%}.detailTable th:nth-child(1),.detailTable td:nth-child(1){width:3%}.detailTable th:nth-child(2),.detailTable td:nth-child(2){width:4%}.detailTable th:nth-child(3),.detailTable td:nth-child(3){width:12%}.detailTable th:nth-child(4),.detailTable td:nth-child(4){width:8%}.detailTable th:nth-child(5),.detailTable td:nth-child(5){width:8%}.detailTable th:nth-child(6),.detailTable td:nth-child(6){width:7%}.detailTable th:nth-child(7),.detailTable td:nth-child(7){width:7%}.detailTable th:nth-child(8),.detailTable td:nth-child(8){width:5%}.detailTable th:nth-child(9),.detailTable td:nth-child(9){width:7%}.detailTable th:nth-child(10),.detailTable td:nth-child(10){width:7%}.detailTable th:nth-child(11),.detailTable td:nth-child(11){width:5%}.detailTable th:nth-child(12),.detailTable td:nth-child(12){width:7%}.detailTable th:nth-child(13),.detailTable td:nth-child(13){width:7%}.detailTable th:nth-child(14),.detailTable td:nth-child(14){width:8%}.detailTable th,.detailTable td{font-size:9.5px;padding:1.8px 1.8px;line-height:1.05;overflow-wrap:anywhere}.detailTable td:nth-child(3),.detailTable td:nth-child(4),.detailTable td:nth-child(5){white-space:normal;word-break:break-word}.detailTable th{font-size:8.2px}.summaryTable th:nth-child(12),.summaryTable td:nth-child(12),.detailTable th:nth-child(13),.detailTable td:nth-child(13){background:#dcebd5!important}.officer{page-break-inside:avoid;break-inside:avoid-page;page-break-after:avoid;break-after:avoid-page}.name{text-align:left}.num{text-align:right}';
-  h+='.attentionPdf{border:1px solid #2563eb;background:#eff6ff;margin:5px 0 6px;padding:3px}.attentionTitle{background:#b9d9ff;color:#063b73;border:1px solid #2563eb;text-align:center;font-size:9px;font-weight:800;padding:3px}.attentionPdf table{margin:0}.attentionPdf th{background:#0e4d7e;color:#fff;font-size:8px}.attentionPdf td{background:#dbeafe;color:#063b73;font-weight:800}.dark{background:#333;color:#fff}.blueHead{background:#0e4d7e;color:#fff}.greenHead{background:#dcebd5}.orangeHead{background:#9a5a00;color:#fff}.under{background:#b9d9ff!important;color:#063b73!important;font-weight:800}.zero{background:#f4b7bd!important;color:#8b0000!important;font-weight:800}.good{background:#dcebd5!important;color:#14532d!important;font-weight:800}.attention{background:#ffe0b2!important;color:#8a4b08!important;font-weight:800}.zeroBadge{background:#9b0000;color:#fff;padding:1px 3px;border-radius:3px;font-size:6.5px;font-weight:800;white-space:nowrap}.total{background:#fff200!important;font-weight:800} .small{font-size:7px}.summaryEnd{page-break-after:always;break-after:page}</style></head><body>';
-  h+='<div class="execTitle">AC-34 MATIALA</div>';
-  h+='<div class="execSub">SIR-2026</div>';
-  h+='<h1>PS-WISE (AERO-WISE) NOTICE & HEARING COMPARISON</h1>';
-  h+='<h2>Previous ECI vs Latest ECI</h2>';
-  h+='<div class="execGrid">';
-  h+='<div class="execCard"><div class="k">TOTAL PS</div><div class="v">'+n(grand.ps)+'</div></div>';
-  h+='<div class="execCard"><div class="k">NOTICE GENERATED</div><div class="v">'+n(grand.gen)+'</div></div>';
-  h+='<div class="execCard"><div class="k">PREVIOUS NOTICE DELIVERED</div><div class="v">'+n(grand.pd)+'</div></div>';
-  h+='<div class="execCard"><div class="k">LATEST NOTICE DELIVERED</div><div class="v">'+n(grand.ld)+'</div></div>';
-  h+='<div class="execCard"><div class="k">DELIVERY INCREASE</div><div class="v">+'+n(grand.ld-grand.pd)+'</div></div>';
-  h+='<div class="execCard"><div class="k">PREVIOUS HEARING HELD</div><div class="v">'+n(grand.ph)+'</div></div>';
-  h+='<div class="execCard"><div class="k">LATEST HEARING HELD</div><div class="v">'+n(grand.lh)+'</div></div>';
-  h+='<div class="execCard"><div class="k">HEARING INCREASE</div><div class="v">+'+n(grand.lh-grand.ph)+'</div></div>';
-  h+='<div class="execCard"><div class="k">% HEARING HELD</div><div class="v">'+pct(grand.lh,grand.gen)+'</div></div>';
-  h+='<div class="execCard"><div class="k">HEARING LAPSE</div><div class="v">'+n(grand.lapse)+'</div></div>';
-  h+='<div class="execCard"><div class="k">ZERO HEARING PS</div><div class="v">'+n(exportRows.filter(r=>r.latestHearing===0).length)+'</div></div>';
-  h+='</div>';
-  const operationalOfficerSet=new Set(groups.map(g=>{
-    const delPct=g.x.gen?g.x.ld/g.x.gen*100:0;
-    const hearPct=g.x.gen?g.x.lh/g.x.gen*100:0;
-    return {...g,attentionScore:(delPct+hearPct)/2};
-  }).sort((a,b)=>a.attentionScore-b.attentionScore).slice(0,3).map(g=>g.aero));
-  h+='<h2>AERO/Ad.AERO-wise Summary</h2><table class="summaryTable"><thead><tr><th class="dark">S.No.</th><th class="dark">AERO / Ad.AERO</th><th class="dark">Designation</th><th class="dark">No. of PS</th><th class="dark">Notice Generated</th><th class="blueHead">Notice Deliv.<br>Prev</th><th class="blueHead">Notice Deliv.<br>Latest</th><th class="blueHead">Diff.</th><th class="blueHead">Hearing Held<br>Prev</th><th class="blueHead">Hearing Held<br>Latest</th><th class="blueHead">Diff.</th><th class="greenHead">% Held<br>(of Gen.)</th><th class="dark">Hearing Lapse</th></tr>';
-  groups.forEach((g,i)=>{
-    const officerAttention=operationalOfficerSet.has(g.aero);
-    h+='<tr class="'+(officerAttention?'officerAttentionRow':'')+'"><td>'+String(i+1)+'</td><td class="name '+(officerAttention?'officerAttentionCell':'')+'">'+esc(g.aero)+(officerAttention?'<div class="attentionBadge">TOP 3 OPERATIONAL ATTENTION</div>':'')+'</td><td class="'+(officerAttention?'officerAttentionCell':'')+'">'+esc(g.rs[0]?.designation||'')+'</td><td class="'+(officerAttention?'officerAttentionCell':'')+'">'+n(g.x.ps)+'</td><td class="num '+(officerAttention?'officerAttentionCell':'')+'">'+n(g.x.gen)+'</td><td class="num '+(officerAttention?'officerAttentionCell':'')+'">'+n(g.x.pd)+'</td><td class="num '+(officerAttention?'officerAttentionCell':'')+'">'+n(g.x.ld)+'</td><td class="num '+(officerAttention?'officerAttentionCell':'')+'">'+n(g.x.ld-g.x.pd)+'</td><td class="num '+(officerAttention?'officerAttentionCell':'')+'">'+n(g.x.ph)+'</td><td class="num '+(officerAttention?'officerAttentionCell':'')+'">'+n(g.x.lh)+'</td><td class="num '+(officerAttention?'officerAttentionCell':'')+'">'+n(g.x.lh-g.x.ph)+'</td><td class="num '+(officerAttention?'officerAttentionCell':'')+' '+(g.x.gen&&g.x.lh/g.x.gen<0.10?'attention':g.x.gen&&g.x.lh/g.x.gen>=0.20?'good':'')+'">'+pct(g.x.lh,g.x.gen)+'</td><td class="num '+(officerAttention?'officerAttentionCell':'')+'">'+n(g.x.lapse)+'</td></tr>';
-  });
-  h+='<tr class="total"><td colspan="3">GRAND TOTAL - AC-34 MATIALA</td><td>'+n(grand.ps)+'</td><td>'+n(grand.gen)+'</td><td>'+n(grand.pd)+'</td><td>'+n(grand.ld)+'</td><td>'+n(grand.ld-grand.pd)+'</td><td>'+n(grand.ph)+'</td><td>'+n(grand.lh)+'</td><td>'+n(grand.lh-grand.ph)+'</td><td>'+pct(grand.lh,grand.gen)+'</td><td>'+n(grand.lapse)+'</td></tr></table>';
-  const zeroGroups=groups.map(g=>({aero:g.aero,ps:g.x.ps,zero:g.rs.filter(r=>r.latestHearing===0).length})).filter(x=>x.zero>0);
-  h+='<div class="overall">CURRENT DATA SNAPSHOT: '+n(grand.ps)+' PS | Notice Generated '+n(grand.gen)+' | Delivered '+n(grand.pd)+' → '+n(grand.ld)+' | Hearing Held '+n(grand.ph)+' → '+n(grand.lh)+' | Hearing Lapse '+n(grand.lapse)+'</div>';
-  h+='<h2 style="margin-top:6px">ZERO HEARING HELD - AERO/Ad.AERO WISE</h2><table class="summaryTable"><thead><tr><th class="dark">S.No.</th><th class="dark">AERO / Ad.AERO</th><th class="dark">Total PS</th><th class="dark">Zero Hearing PS</th><th class="dark">Zero Hearing %</th></tr></thead><tbody>';
-  zeroGroups.forEach((z,i)=>{h+='<tr class="zero"><td>'+String(i+1)+'</td><td class="name">'+esc(z.aero)+'</td><td>'+n(z.ps)+'</td><td>'+n(z.zero)+'</td><td>'+pct(z.zero,z.ps)+'</td></tr>';});
-  h+='<tr class="total"><td colspan="2">TOTAL</td><td>'+n(grand.ps)+'</td><td>'+n(exportRows.filter(r=>r.latestHearing===0).length)+'</td><td>'+pct(exportRows.filter(r=>r.latestHearing===0).length,grand.ps)+'</td></tr></tbody></table>';
-  h+='<div class="small">Report generated from CURRENT dashboard data at '+new Date().toLocaleString("en-IN")+'. Red rows = ZERO HEARING HELD.</div><div class="summaryEnd"></div>';
 
-  const hearingRateRows=groups.map(g=>({officer:g.aero,designation:String(g.rs[0]?.designation||""),ps:g.x.ps,hearing:g.x.lh,gen:g.x.gen,pct:g.x.gen?g.x.lh/g.x.gen*100:0})).sort((a,b)=>b.pct-a.pct || a.officer.localeCompare(b.officer));
-  const attentionPsByOfficer=new Map<string,Set<number>>();
-  groups.forEach(g=>{
-    // Exactly 3 selected PS per officer. Zero-hearing selected PS remain red so the zero-hearing status is visible.
-    const scored=g.rs
-      .map(r=>{
-        const delPct=r.noticeGenerated?r.latestDelivered/r.noticeGenerated*100:0;
-        const hearPct=r.noticeGenerated?r.latestHearing/r.noticeGenerated*100:0;
-        return {...r,combined:(delPct+hearPct)/2};
-      })
-      .sort((a,b)=>a.combined-b.combined || a.ps-b.ps)
-      .slice(0,3);
-    attentionPsByOfficer.set(g.aero,new Set(scored.map(r=>r.ps)));
+  const now=new Date();
+  const stamp=now.toLocaleString("en-IN",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false});
+  const zeroRows=exportRows.filter(r=>r.latestHearing===0).sort((a,b)=>a.ps-b.ps);
+  const zeroPct=grand.ps?zeroRows.length/grand.ps*100:0;
+  const hearingPct=grand.gen?grand.lh/grand.gen*100:0;
+  const disposalPct=grand.lh+grand.lapse?grand.lh/(grand.lh+grand.lapse)*100:0;
+
+  const card=(label:string,value:string,sub:string,cls:string)=>{
+    return '<div class="kpi '+cls+'"><div class="kpiLabel">'+esc(label)+'</div><div class="kpiValue">'+esc(value)+'</div><div class="kpiSub">'+esc(sub)+'</div></div>';
+  };
+  const metric=(label:string,prev:number,latest:number)=>{
+    const diff=latest-prev;
+    return '<div class="metricBox"><div class="metricLabel">'+esc(label)+'</div><div class="metricLine"><span>'+n(prev)+'</span><b>→</b><span>'+n(latest)+'</span></div><div class="metricDiff '+(diff>=0?'positive':'negative')+'">'+(diff>=0?'+':'')+n(diff)+'</div><div class="metricCaption">Previous&nbsp;&nbsp;→&nbsp;&nbsp;Latest&nbsp;&nbsp;|&nbsp;&nbsp;Difference</div></div>';
+  };
+
+  let h='<!doctype html><html><head><meta charset="utf-8"><title>AC-34 MATIALA - NOTICE & HEARING MONITORING REPORT</title>';
+  h+='<style>';
+  h+='@page{size:A4 landscape;margin:12mm 10mm 15mm 10mm}';
+  h+='*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#17212b;font-family:Arial,Helvetica,sans-serif;font-size:9px}body{counter-reset:page}';
+  h+='.page{page-break-after:always;position:relative;min-height:170mm;padding-bottom:13mm}.page:last-child{page-break-after:auto}';
+  h+='.cover{min-height:180mm;display:flex;flex-direction:column;justify-content:center;padding:15mm 18mm;background:linear-gradient(135deg,#f4f8fb 0%,#fff 55%,#eef5fa 100%);border:1px solid #cbd8e3}';
+  h+='.brand{font-size:12px;font-weight:800;letter-spacing:1.5px;color:#0e4d7e;text-transform:uppercase;margin-bottom:12px}.coverTitle{font-size:30px;line-height:1.12;font-weight:900;color:#123d5d;margin:0}.coverSub{font-size:16px;font-weight:700;color:#465866;margin-top:8px}.coverRule{width:90px;height:4px;background:#0e4d7e;margin:18px 0}.coverMeta{font-size:11px;color:#526574;line-height:1.8}.coverMeta b{color:#17212b}.coverNote{margin-top:20px;padding:10px 12px;border-left:4px solid #0e4d7e;background:#fff;border:1px solid #d7e1e8;font-size:9.5px;color:#52606b}';
+  h+='.sectionTitle{font-size:16px;font-weight:900;color:#0e4d7e;border-bottom:3px solid #0e4d7e;padding:0 0 5px;margin:0 0 9px}.sectionSub{font-size:9px;color:#60717d;margin:-4px 0 8px}.kpiGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:10px}.kpi{border:1px solid #cbd8e3;border-top:4px solid #0e4d7e;border-radius:3px;padding:7px 8px;min-height:58px;background:#fff}.kpi.green{border-top-color:#4f8a55}.kpi.orange{border-top-color:#d18b32}.kpi.red{border-top-color:#b73737}.kpi.blue{border-top-color:#0e4d7e}.kpiLabel{font-size:7.5px;text-transform:uppercase;font-weight:800;color:#61727f;letter-spacing:.3px}.kpiValue{font-size:16px;font-weight:900;color:#152d3e;margin-top:3px}.kpiSub{font-size:7px;color:#74818a;margin-top:2px}.metricGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 12px}.metricBox{border:1px solid #cbd8e3;border-radius:3px;padding:8px 10px;background:#f8fbfd}.metricLabel{font-size:9px;font-weight:900;color:#35566d;text-transform:uppercase}.metricLine{display:flex;align-items:center;gap:14px;font-size:18px;font-weight:900;margin-top:4px}.metricLine b{color:#0e4d7e}.metricDiff{font-size:11px;font-weight:900;margin-top:2px}.metricDiff.positive{color:#2f6d38}.metricDiff.negative{color:#a02f2f}.metricCaption{font-size:7px;color:#74818a;margin-top:3px}';
+  h+='.legend{display:flex;gap:18px;align-items:center;border:1px solid #d6e0e6;background:#fafcfd;padding:6px 8px;margin:8px 0}.legendItem{font-weight:800;font-size:8px}.swatch{display:inline-block;width:13px;height:10px;border:1px solid #aaa;margin-right:5px;vertical-align:-1px}.swatch.red{background:#ffd9d9}.swatch.blue{background:#d9eaff}.swatch.green{background:#dcebd5}';
+  h+='table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:5px}th{background:#0e4d7e;color:#fff;font-weight:900;text-align:center;border:1px solid #17486b;padding:4px 3px;font-size:7.5px}td{border:1px solid #bfcbd3;padding:3px 3px;vertical-align:middle;font-size:7.5px;line-height:1.2;overflow-wrap:anywhere}td.num{text-align:right;white-space:nowrap}td.center{text-align:center}.wrap{white-space:normal;overflow-wrap:anywhere}.total td{background:#e8f0f5;font-weight:900;border-top:2px solid #7890a0}.rate{background:#dcebd5!important;color:#17212b;font-weight:900!important}.diff{font-weight:900}.zero td{background:#ffd9d9!important;color:#6e1111!important}.zeroBadge{display:inline-block;background:#b73737;color:#fff;font-size:6.5px;font-weight:900;padding:2px 4px;border-radius:2px;white-space:nowrap}.statusZero{font-weight:900;color:#a61f1f}.statusNormal{font-weight:800;color:#35566d}';
+  h+='.officerHead{margin:11px 0 5px;padding:8px 10px;background:#e8f2f8;border-left:5px solid #0e4d7e;display:flex;justify-content:space-between;align-items:center;page-break-after:avoid}.officerName{font-size:14px;font-weight:900;color:#123d5d}.officerDesignation{font-size:9px;font-weight:800;color:#536873}.officerPs{font-size:10px;font-weight:900;color:#0e4d7e}.miniGrid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-bottom:6px}.mini{border:1px solid #d0dbe2;background:#fbfdfe;padding:5px}.mini span{display:block;font-size:6.5px;color:#687983;text-transform:uppercase;font-weight:800}.mini b{display:block;font-size:10px;margin-top:2px;color:#203b4d}.subTitle{font-size:10px;font-weight:900;color:#35566d;margin:8px 0 4px}.avoidBreak{break-inside:avoid;page-break-inside:avoid}.zeroSummary{margin-bottom:9px}.footer{position:fixed;bottom:3mm;left:10mm;right:10mm;border-top:1px solid #ccd6dc;padding-top:3px;color:#687780;font-size:7px;display:flex;justify-content:space-between;z-index:10;background:#fff}.footer .pageNo:after{content:counter(page)}.footer .pagesNo:after{content:counter(pages)}';
+  h+='@media print{body{counter-reset:page}.noPrint{display:none!important}.footer{position:fixed}.page{page-break-after:always}.page:last-child{page-break-after:auto}}';
+  h+='</style></head><body>';
+
+  // PAGE 1 — Executive Summary
+  h+='<div class="page"><div class="cover">';
+  h+='<div class="brand">Government Report • AC-34 Matiala • SIR-2026</div>';
+  h+='<h1 class="coverTitle">AC-34 MATIALA<br>SIR-2026<br>NOTICE & HEARING<br>MONITORING REPORT</h1>';
+  h+='<div class="coverSub">Previous ECI vs Latest ECI</div><div class="coverRule"></div>';
+  h+='<div class="coverMeta"><b>Report Generated:</b> '+esc(stamp)+'<br><b>Data Scope:</b> '+n(grand.ps)+' PS &nbsp;|&nbsp; '+n(groups.length)+' AERO / Ad.AERO</div>';
+  h+='<div class="coverNote">This PDF is generated directly from the processed dashboard data at the time the existing <b>Download PDF</b> action is used. The dashboard UI and upload workflow remain unchanged.</div>';
+  h+='</div>';
+  h+='<div style="margin-top:10px"><div class="sectionTitle">EXECUTIVE SUMMARY</div>';
+  h+='<div class="kpiGrid">';
+  h+=card("Total PS",n(grand.ps),"Polling Stations","blue");
+  h+=card("Notice Generated",n(grand.gen),"Current dataset","blue");
+  h+=card("Previous Notice Delivered",n(grand.pd),"Previous ECI","blue");
+  h+=card("Latest Notice Delivered",n(grand.ld),"Latest ECI","green");
+  h+=card("Delivery Difference",(grand.ld-grand.pd>=0?"+":"")+n(grand.ld-grand.pd),"Latest − Previous","green");
+  h+=card("Previous Hearing Held",n(grand.ph),"Previous ECI","blue");
+  h+=card("Latest Hearing Held",n(grand.lh),"Latest ECI","green");
+  h+=card("Hearing Difference",(grand.lh-grand.ph>=0?"+":"")+n(grand.lh-grand.ph),"Latest − Previous","green");
+  h+=card("% Hearing Held",hearingPct.toFixed(2)+"%","Latest Hearing / Notice Generated","green");
+  h+=card("Hearing Lapsed",n(grand.lapse),"Latest ECI","orange");
+  h+=card("Zero Hearing PS",n(zeroRows.length),"Latest Hearing Held = 0","red");
+  h+=card("Zero Hearing %",zeroPct.toFixed(2)+"%","Of total PS","red");
+  h+='</div>';
+  h+='<div class="metricGrid">'+metric("Notice Delivered",grand.pd,grand.ld)+metric("Hearing Held",grand.ph,grand.lh)+'</div>';
+  h+='<div class="legend"><span class="legendItem"><span class="swatch red"></span>RED = ZERO HEARING HELD</span><span class="legendItem"><span class="swatch green"></span>GREEN = POSITIVE LATEST / RATE</span><span class="legendItem"><span class="swatch blue"></span>BLUE = REPORT / SECTION HIGHLIGHT</span></div>';
+  h+='</div></div>';
+
+  // PAGE 2 — Consolidated report
+  h+='<div class="page"><div class="sectionTitle">AERO / Ad.AERO CONSOLIDATED REPORT</div><div class="sectionSub">Officer-wise consolidation using the same rows and calculations already processed by the dashboard.</div>';
+  h+='<table><thead><tr><th style="width:3%">S.No.</th><th style="width:14%">AERO / Ad.AERO</th><th style="width:7%">Designation</th><th style="width:4%">PS</th><th>Notice Generated</th><th>Prev Delivered</th><th>Latest Delivered</th><th>Delivery Diff</th><th>Prev Hearing</th><th>Latest Hearing</th><th>Hearing Diff</th><th>% Held</th><th>Hearing Lapsed</th><th>Zero Hearing PS</th><th>Disposal %</th></tr></thead><tbody>';
+  groups.forEach((g,i)=>{
+    const zero=g.rs.filter(r=>r.latestHearing===0).length;
+    h+='<tr><td class="center">'+(i+1)+'</td><td class="wrap"><b>'+esc(g.aero)+'</b></td><td class="center">'+esc(g.rs[0]?.designation||"")+'</td><td class="center">'+g.x.ps+'</td><td class="num">'+n(g.x.gen)+'</td><td class="num">'+n(g.x.pd)+'</td><td class="num">'+n(g.x.ld)+'</td><td class="num diff">'+(g.x.ld-g.x.pd>=0?"+":"")+n(g.x.ld-g.x.pd)+'</td><td class="num">'+n(g.x.ph)+'</td><td class="num">'+n(g.x.lh)+'</td><td class="num diff">'+(g.x.lh-g.x.ph>=0?"+":"")+n(g.x.lh-g.x.ph)+'</td><td class="num rate">'+pct(g.x.lh,g.x.gen)+'</td><td class="num">'+n(g.x.lapse)+'</td><td class="center">'+zero+'</td><td class="num rate">'+g.dispose.toFixed(2)+'%</td></tr>';
   });
-  h+='<div class="hearingRateTitle">ERO / AERO / Ad.AERO — HEARING HELD % (FACTUAL OFFICER-WISE TABLE)</div><table class="hearingRateTable"><thead><tr><th>S.No.</th><th>Officer</th><th>Designation</th><th>PS</th><th>Hearing Held</th><th>Notice Generated</th><th>% Hearing Held</th></tr></thead><tbody>';hearingRateRows.forEach((r,i)=>{h+='<tr><td>'+String(i+1)+'</td><td class="name">'+esc(r.officer)+'</td><td>'+esc(r.designation)+'</td><td>'+n(r.ps)+'</td><td>'+n(r.hearing)+'</td><td>'+n(r.gen)+'</td><td>'+r.pct.toFixed(2)+'%</td></tr>';});h+='</tbody></table>';
-  groups.forEach((g,gi)=>{
-    h+='<div class="reportPage"><h1>OFFICE OF THE ELECTORAL REGISTRATION OFFICER, AC-34, MATIALA</h1><h2>SIR-2026 - PS-WISE (AERO-WISE) NOTICE & HEARING COMPARISON - Previous ECI vs Latest ECI</h2><div class="detailTitle"><span class="detailOfficerName">'+String(gi+1)+'. '+esc(g.aero)+'</span>'+esc(g.rs[0]?.designation||'')+' - '+g.x.ps+' PS | Notice Generated: '+n(g.x.gen)+'</div><div class="detailStats">Notices Delivered: +'+n(g.x.ld-g.x.pd)+' (from '+n(g.x.pd)+' to '+n(g.x.ld)+') = '+pct(g.x.ld-g.x.pd,g.x.gen)+' of Notice Generated | Hearings Held: +'+n(g.x.lh-g.x.ph)+' (from '+n(g.x.ph)+' to '+n(g.x.lh)+') = '+pct(g.x.lh-g.x.ph,g.x.gen)+' of Notice Generated'+''+'</div>';
-    h+='<table class="detailTable"><caption class="attentionCaption">TOP 3 OPERATIONAL ATTENTION — BLUE HIGHLIGHTED PS</caption><thead><tr><th class="dark">S.No.</th><th class="dark">P.S. No.</th><th class="dark">BLO Name</th><th class="dark">BLO Mobile No.</th><th class="dark">BLO Supervisor</th><th class="dark">Notice<br>Generated</th><th class="blueHead">Notice Deliv.<br>Prev</th><th class="blueHead">Notice Deliv.<br>Latest</th><th class="blueHead">Diff.</th><th class="blueHead">Hearing Held<br>Prev</th><th class="blueHead">Hearing Held<br>Latest</th><th class="blueHead">Diff.</th><th class="greenHead">% Held<br>(of Gen.)</th><th class="dark">Hearing Lapse</th></tr>';
+  h+='<tr class="total"><td colspan="4">GRAND TOTAL</td><td class="num">'+n(grand.gen)+'</td><td class="num">'+n(grand.pd)+'</td><td class="num">'+n(grand.ld)+'</td><td class="num diff">'+(grand.ld-grand.pd>=0?"+":"")+n(grand.ld-grand.pd)+'</td><td class="num">'+n(grand.ph)+'</td><td class="num">'+n(grand.lh)+'</td><td class="num diff">'+(grand.lh-grand.ph>=0?"+":"")+n(grand.lh-grand.ph)+'</td><td class="num rate">'+hearingPct.toFixed(2)+'%</td><td class="num">'+n(grand.lapse)+'</td><td class="center">'+zeroRows.length+'</td><td class="num rate">'+disposalPct.toFixed(2)+'%</td></tr></tbody></table>';
+  h+='<div class="subTitle">HEARING HELD % — OFFICER-WISE FACTUAL TABLE</div><table><thead><tr><th style="width:4%">S.No.</th><th>Officer</th><th>Designation</th><th>PS</th><th>Hearing Held</th><th>Notice Generated</th><th>% Hearing Held</th></tr></thead><tbody>';
+  groups.forEach((g,i)=>{h+='<tr><td class="center">'+(i+1)+'</td><td class="wrap">'+esc(g.aero)+'</td><td class="center">'+esc(g.rs[0]?.designation||"")+'</td><td class="center">'+g.x.ps+'</td><td class="num">'+n(g.x.lh)+'</td><td class="num">'+n(g.x.gen)+'</td><td class="num rate">'+pct(g.x.lh,g.x.gen)+'</td></tr>';});
+  h+='</tbody></table></div>';
+
+  // PAGE 3+ — detailed officer sections
+  groups.forEach(g=>{
+    h+='<div class="page"><div class="officerHead"><div><div class="officerName">'+esc(g.aero)+'</div><div class="officerDesignation">'+esc(g.rs[0]?.designation||"")+'</div></div><div class="officerPs">'+g.x.ps+' PS</div></div>';
+    h+='<div class="miniGrid">';
+    h+=card("Notice Generated",n(g.x.gen),"","blue");
+    h+=card("Previous Delivered",n(g.x.pd),"","blue");
+    h+=card("Latest Delivered",n(g.x.ld),"","green");
+    h+=card("Previous Hearing",n(g.x.ph),"","blue");
+    h+=card("Latest Hearing",n(g.x.lh),"","green");
+    h+=card("% Held",pct(g.x.lh,g.x.gen),"","green");
+    h+=card("Hearing Lapse",n(g.x.lapse),"","orange");
+    h+=card("Zero Hearing PS",n(g.rs.filter(r=>r.latestHearing===0).length),"","red");
+    h+='</div>';
+    h+='<div class="metricGrid">'+metric("Notice Delivered",g.x.pd,g.x.ld)+metric("Hearing Held",g.x.ph,g.x.lh)+'</div>';
+    h+='<div class="subTitle">PS-WISE DETAIL TABLE</div>';
+    h+='<table><thead><tr><th style="width:3%">S.No.</th><th style="width:4%">PS</th><th style="width:14%">BLO Name</th><th style="width:9%">BLO Mobile</th><th style="width:15%">BLO Supervisor</th><th>Notice Generated</th><th>Prev Delivered</th><th>Latest Delivered</th><th>Delivery Diff</th><th>Prev Hearing</th><th>Latest Hearing</th><th>Hearing Diff</th><th>% Held</th><th>Hearing Lapsed</th><th>Status</th></tr></thead><tbody>';
     g.rs.slice().sort((a,b)=>a.ps-b.ps).forEach((r,i)=>{
       const isZero=r.latestHearing===0;
-      const isAttention=attentionPsByOfficer.get(g.aero)?.has(r.ps)===true;
-      h+='<tr class="'+(isZero?'zero ':'')+(isAttention&&!isZero?'attentionRow':'')+'"><td>'+String(i+1)+'</td><td>'+r.ps+'</td><td class="name">'+esc(r.bloName)+(isAttention?' <span class="attentionBadge">TOP 3 OPERATIONAL ATTENTION</span>':'')+(isZero?' <span class="zeroBadge">ZERO HEARING HELD</span>':'')+'</td><td>'+esc(r.bloMobile)+'</td><td class="name">'+esc(r.supervisor)+'</td><td>'+n(r.noticeGenerated)+'</td><td>'+n(r.prevDelivered)+'</td><td>'+n(r.latestDelivered)+'</td><td>'+n(r.latestDelivered-r.prevDelivered)+'</td><td>'+n(r.prevHearing)+'</td><td>'+n(r.latestHearing)+'</td><td>'+n(r.latestHearing-r.prevHearing)+'</td><td>'+pct(r.latestHearing,r.noticeGenerated)+'</td><td>'+n(r.hearingLapse)+'</td></tr>';
+      h+='<tr class="'+(isZero?'zero':'')+'"><td class="center">'+(i+1)+'</td><td class="center">'+r.ps+'</td><td class="wrap"><b>'+esc(r.bloName)+'</b></td><td class="center">'+esc(r.bloMobile)+'</td><td class="wrap">'+esc(r.supervisor)+'</td><td class="num">'+n(r.noticeGenerated)+'</td><td class="num">'+n(r.prevDelivered)+'</td><td class="num">'+n(r.latestDelivered)+'</td><td class="num diff">'+(r.latestDelivered-r.prevDelivered>=0?"+":"")+n(r.latestDelivered-r.prevDelivered)+'</td><td class="num">'+n(r.prevHearing)+'</td><td class="num">'+n(r.latestHearing)+'</td><td class="num diff">'+(r.latestHearing-r.prevHearing>=0?"+":"")+n(r.latestHearing-r.prevHearing)+'</td><td class="num rate">'+pct(r.latestHearing,r.noticeGenerated)+'</td><td class="num">'+n(r.hearingLapse)+'</td><td class="center '+(isZero?'statusZero':'statusNormal')+'">'+(isZero?'ZERO HEARING':'ACTIVE')+'</td></tr>';
     });
-    h+='<tr class="total"><td colspan="5">Total - '+esc(g.aero)+', '+esc(g.rs[0]?.designation||'')+' ('+g.x.ps+' PS)</td><td>'+n(g.x.gen)+'</td><td>'+n(g.x.pd)+'</td><td>'+n(g.x.ld)+'</td><td>'+n(g.x.ld-g.x.pd)+'</td><td>'+n(g.x.ph)+'</td><td>'+n(g.x.lh)+'</td><td>'+n(g.x.lh-g.x.ph)+'</td><td>'+pct(g.x.lh,g.x.gen)+'</td><td>'+n(g.x.lapse)+'</td></tr></table></div>';
+    h+='<tr class="total"><td colspan="5">TOTAL — '+esc(g.aero)+' ('+g.x.ps+' PS)</td><td class="num">'+n(g.x.gen)+'</td><td class="num">'+n(g.x.pd)+'</td><td class="num">'+n(g.x.ld)+'</td><td class="num diff">'+(g.x.ld-g.x.pd>=0?"+":"")+n(g.x.ld-g.x.pd)+'</td><td class="num">'+n(g.x.ph)+'</td><td class="num">'+n(g.x.lh)+'</td><td class="num diff">'+(g.x.lh-g.x.ph>=0?"+":"")+n(g.x.lh-g.x.ph)+'</td><td class="num rate">'+pct(g.x.lh,g.x.gen)+'</td><td class="num">'+n(g.x.lapse)+'</td><td class="center">'+g.rs.filter(r=>r.latestHearing===0).length+' Zero</td></tr></tbody></table>';
+    h+='</div>';
   });
-  h+='<div class="pageFooter">AC-34 MATIALA • SIR-2026 • PS-WISE (AERO-WISE) NOTICE & HEARING COMPARISON • Generated '+esc(new Date().toLocaleString("en-IN"))+' • Page <span class="pageNum"></span></div>';
+
+  // Final section — zero hearing
+  h+='<div class="page"><div class="sectionTitle">ZERO HEARING PS — ACTION REQUIRED</div><div class="sectionSub">All PS where Latest Hearing Held = 0. The list is generated dynamically from the latest dashboard data.</div>';
+  h+='<div class="kpiGrid" style="grid-template-columns:repeat(4,1fr)">'+card("Total Zero Hearing PS",n(zeroRows.length),"Latest Hearing = 0","red")+card("Total PS",n(grand.ps),"Current dataset","blue")+card("Zero Hearing %",zeroPct.toFixed(2)+"%","Of total PS","red")+card("Latest Hearing Held",n(grand.lh),"Current dataset","green")+'</div>';
+  h+='<div class="subTitle">AERO / Ad.AERO ZERO HEARING SUMMARY</div><table class="zeroSummary"><thead><tr><th>AERO / Ad.AERO</th><th>Designation</th><th>Total PS</th><th>Zero Hearing PS</th><th>Zero Hearing %</th></tr></thead><tbody>';
+  groups.forEach(g=>{const z=g.rs.filter(r=>r.latestHearing===0).length;h+='<tr><td class="wrap">'+esc(g.aero)+'</td><td class="center">'+esc(g.rs[0]?.designation||"")+'</td><td class="center">'+g.x.ps+'</td><td class="center statusZero">'+z+'</td><td class="num">'+(g.x.ps?((z/g.x.ps)*100).toFixed(2):"0.00")+'%</td></tr>';});
+  h+='</tbody></table>';
+  h+='<div class="subTitle">ZERO HEARING PS — DETAILED LIST</div><table><thead><tr><th style="width:3%">S.No.</th><th style="width:15%">AERO / Ad.AERO</th><th style="width:15%">Supervisor</th><th style="width:4%">PS No.</th><th style="width:15%">BLO Name</th><th>Notice Generated</th><th>Notice Delivered</th><th>Hearing Held</th><th>Hearing Lapsed</th><th>Status</th></tr></thead><tbody>';
+  zeroRows.forEach((r,i)=>{h+='<tr class="zero"><td class="center">'+(i+1)+'</td><td class="wrap">'+esc(r.aero)+'</td><td class="wrap">'+esc(r.supervisor)+'</td><td class="center">'+r.ps+'</td><td class="wrap">'+esc(r.bloName)+'</td><td class="num">'+n(r.noticeGenerated)+'</td><td class="num">'+n(r.latestDelivered)+'</td><td class="num">0</td><td class="num">'+n(r.hearingLapse)+'</td><td class="center statusZero">ZERO HEARING</td></tr>';});
+  h+='<tr class="total"><td colspan="5">TOTAL ZERO HEARING PS</td><td colspan="5" class="center">'+n(zeroRows.length)+' / '+n(grand.ps)+' &nbsp; | &nbsp; '+zeroPct.toFixed(2)+'%</td></tr></tbody></table>';
+  h+='<div class="legend"><span class="legendItem"><span class="swatch red"></span>RED = ZERO HEARING HELD</span><span class="legendItem">Report timestamp: '+esc(stamp)+'</span></div></div>';
+
+  h+='<div class="footer"><span>AC-34 MATIALA | SIR-2026 | NOTICE & HEARING MONITORING REPORT</span><span>Report Generated: '+esc(stamp)+'</span><span>Page <span class="pageNo"></span> of <span class="pagesNo"></span></span></div>';
   h+='</body></html>';
-  const w=window.open("","_blank","width=1800,height=1200"); if(!w){alert("Please allow pop-ups for PDF export.");return;} w.document.write(h); w.document.close(); w.focus(); setTimeout(()=>{w.focus();w.print();},1200);
+
+  const w=window.open("","_blank","width=1800,height=1200");
+  if(!w){alert("Please allow pop-ups for PDF export.");return;}
+  w.document.write(h); w.document.close(); w.focus();
+  setTimeout(()=>{w.focus();w.print();},900);
 }
 export default function Page(){
   const [master,setMaster]=useState<Map<number,any>>(new Map());
