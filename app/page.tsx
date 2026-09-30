@@ -351,17 +351,34 @@ export default function Page(){
       <div className="card"><h3>② Latest ECI Excel</h3><p>Current report. Notice Generated + latest hearing status come from this file.</p><input className="input" type="file" accept=".xlsx,.xls,.csv" onChange={load(setLatest,"eci")}/></div>
     </div>
     {error&&<div className="error">{error}</div>}
-    <div className="section card"><h3>One-time Master Mapping</h3><div className="note">The app has a fixed master mapping slot. If you need to replace it, upload an Excel containing PS No, AERO/Ad.AERO, BLO Supervisor and BLO Name. The mapping is used on every subsequent ECI upload.</div><div style={{marginTop:10}}><input className="input" type="file" accept=".xlsx,.xls,.csv" onChange={e=>{const f=e.target.files?.[0];if(!f)return;readRows(f).then(p=>{const m=parseMapping(p);if(m.size<100){setError("Master mapping file was not detected. The PS column must be named PS No / PS Number / Part No, and the file must contain AERO/Ad.AERO, BLO Supervisor and BLO Name.");return;}setMaster(m);setError("");}).catch(err=>setError(String(err)));}}/></div></div>
+    <div className="section card"><h3>One-time Master Mapping</h3><div className="note">Authoritative mapping: PS → AERO/Ad.AERO → BLO Supervisor → BLO. A replacement is accepted only when the 430-PS structure is present and required mapping fields are populated.</div><div style={{marginTop:10}}><input className="input" type="file" accept=".xlsx,.xls,.csv" onChange={e=>{const f=e.target.files?.[0];if(!f)return;setError("");readRows(f).then(p=>{const m=parseMapping(p);const missing=Array.from({length:430},(_,i)=>i+1).filter(ps=>!m.has(ps));const bad=Array.from(m.values()).filter(v=>!v.aero||!v.bloName||!v.supervisor);if(m.size!==430||missing.length||bad.length){setError("Master mapping validation failed: the file must contain exactly the 430 PS records with AERO, BLO Name and BLO Supervisor populated.");return;}setMaster(m);setError("");}).catch(err=>setError(String(err)));}}/></div></div>
     {master.size===0&&<div className="error">Master mapping is not loaded yet. Upload the one-time mapping Excel below. It must contain PS No, AERO/Ad.AERO, BLO Supervisor and BLO Name. After upload it is saved in this browser for future ECI updates.</div>}
-    <div className="stats">
-      <div className="stat"><span>PS shown</span><b>{shown.length}</b></div><div className="stat"><span>Notice Generated</span><b>{totals.gen.toLocaleString()}</b></div><div className="stat"><span>Latest Delivered</span><b>{totals.del.toLocaleString()}</b></div><div className="stat"><span>Previous Hearing</span><b>{totals.ph.toLocaleString()}</b></div><div className="stat"><span>Latest Hearing</span><b>{totals.lh.toLocaleString()}</b></div><div className="stat"><span>Zero Hearing PS</span><b className="neg">{totals.zero}</b></div>
+    <div className="section execPanel">
+      <div className="sectionHead"><div><h2>Executive Summary</h2><div className="note">Dynamic values from the uploaded Previous and Latest ECI reports.</div></div><div className="buttonRow"><button className="btn" onClick={exportWorkbook}>Export Full Excel</button><button className="btn primary" onClick={()=>printReport(rows.map(r=>({...r})))}>Download Full PDF</button></div></div>
+      <div className="stats execStats">
+        {[
+          ["Total PS",rows.length,"info"],["Notice Generated",totals.gen,"info"],["Delivered Previous",totals.pd,"info"],["Delivered Latest",totals.del,"good"],
+          ["Delivery Difference",totals.del-totals.pd,"good"],["Hearing Previous",totals.ph,"info"],["Hearing Latest",totals.lh,"good"],["Hearing Difference",totals.lh-totals.ph,"good"],
+          ["Overall Hearing %",totals.gen?(totals.lh/totals.gen*100).toFixed(2)+"%":"0.00%","good"],["Hearing Lapsed",totals.lapse,"attention"],["Zero Hearing PS",totals.zero,"critical"],["Zero Hearing %",rows.length?(totals.zero/rows.length*100).toFixed(2)+"%":"0.00%","critical"]
+        ].map(([k,v,t])=><div className={"stat metric "+t} key={String(k)}><span>{k}</span><b>{typeof v==="number"?v.toLocaleString("en-IN"):v}</b></div>)}
+      </div>
+      <div className="compareGrid"><div className="compareCard"><b>Notice Delivered</b><div><span>{totals.pd.toLocaleString("en-IN")}</span><span>→</span><strong>{totals.del.toLocaleString("en-IN")}</strong><em className="pos">{totals.del>=totals.pd?"+":""}{(totals.del-totals.pd).toLocaleString("en-IN")}</em></div></div><div className="compareCard"><b>Hearing Held</b><div><span>{totals.ph.toLocaleString("en-IN")}</span><span>→</span><strong>{totals.lh.toLocaleString("en-IN")}</strong><em className="pos">{totals.lh>=totals.ph?"+":""}{(totals.lh-totals.ph).toLocaleString("en-IN")}</em></div></div><div className="compareCard"><b>Hearing Lapsed</b><div><span>—</span><span>→</span><strong>{totals.lapse.toLocaleString("en-IN")}</strong><em className="attentionText">CURRENT</em></div></div></div>
     </div>
-    <div className="toolbar">
-      <select className="select" value={filterAero} onChange={e=>setFilterAero(e.target.value)}>{aeros.map(x=><option key={x}>{x}</option>)}</select>
-      <select className="select" value={filterSup} onChange={e=>setFilterSup(e.target.value)}>{sups.map(x=><option key={x}>{x}</option>)}</select>
-      <input className="search" placeholder="Search PS / BLO / Supervisor / AERO" value={search} onChange={e=>setSearch(e.target.value)}/>
-      <button className="btn" onClick={exportCsv}>Export Excel</button>
-      <button className="btn primary" onClick={()=>printReport(rows.map(r=>({...r})))}>Download PDF</button>
+    <div className="section card">
+      <div className="sectionHead"><div><h2>Advanced Filters & Search</h2><div className="note">All filters work together. Search covers PS, BLO, Supervisor, AERO and Designation.</div></div><button className="btn" onClick={resetFilters}>Reset Filters</button></div>
+      <div className="filters">
+        <select className="select" value={filterAero} onChange={e=>setFilterAero(e.target.value)}>{aeros.map(x=><option key={x}>{x}</option>)}</select>
+        <select className="select" value={filterDesignation} onChange={e=>setFilterDesignation(e.target.value)}>{designations.map(x=><option key={x}>{x}</option>)}</select>
+        <select className="select" value={filterSup} onChange={e=>setFilterSup(e.target.value)}>{sups.map(x=><option key={x}>{x}</option>)}</select>
+        <select className="select" value={filterBlo} onChange={e=>setFilterBlo(e.target.value)}>{blos.map(x=><option key={x}>{x}</option>)}</select>
+        <select className="select" value={filterHearing} onChange={e=>setFilterHearing(e.target.value)}><option>ALL</option><option>ZERO HEARING</option><option>PENDING</option><option>DISPOSED</option></select>
+        <select className="select" value={filterZero} onChange={e=>setFilterZero(e.target.value)}><option>ALL</option><option>YES</option><option>NO</option></select>
+        <select className="select" value={filterHeld} onChange={e=>setFilterHeld(e.target.value)}><option value="ALL">HEARING HELD: ALL</option><option value="YES">HEARING HELD: YES</option><option value="NO">HEARING HELD: NO</option></select>
+        <select className="select" value={filterLapse} onChange={e=>setFilterLapse(e.target.value)}><option value="ALL">HEARING LAPSED: ALL</option><option value="YES">HEARING LAPSED: YES</option><option value="NO">HEARING LAPSED: NO</option></select>
+        <input className="search" placeholder="Search PS / BLO / Supervisor / AERO / Designation" value={search} onChange={e=>setSearch(e.target.value)}/>
+        <input className="select range" type="number" min="0" placeholder="Min Hearing %" value={minPct} onChange={e=>setMinPct(e.target.value)}/>
+        <input className="select range" type="number" min="0" placeholder="Max Hearing %" value={maxPct} onChange={e=>setMaxPct(e.target.value)}/>
+      </div>
     </div>
     <div className="section card"><h2>AERO / Ad.AERO Wise Consolidated Report</h2><div className="note" style={{marginBottom:8}}>🔴 Red = ZERO HEARING HELD. 🟢 Green = 20%+ hearings held of notice generated. 🟠 Orange = below 10%.</div><div className="tableWrap"><table className="table consolidated"><thead><tr>
       <th>S.No.</th><th>AERO / Ad.AERO</th><th>Designation</th><th>No. of PS</th><th>Notice Generated</th><th>Notice Deliv. Prev</th><th>Notice Deliv. Latest</th><th>Diff.</th><th>Hearing Held Prev</th><th>Hearing Held Latest</th><th>Diff.</th><th>% Held (of Gen.)</th><th>Hearing Lapse</th>
