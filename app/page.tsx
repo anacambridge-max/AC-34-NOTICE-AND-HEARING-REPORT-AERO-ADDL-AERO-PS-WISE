@@ -1,5 +1,7 @@
 "use client";
 
+// AC-34 build-fix checkpoint: keep the deployed page in sync with the latest clean report layout.
+
 import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 
