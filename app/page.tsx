@@ -255,7 +255,7 @@ function printReport(rows:Row[], sourceTotals?:{totalDocs?:number,totalDisc?:num
   h+='<tr class="total"><td colspan="2">TOTAL</td><td>'+n(grand.ps)+'</td><td>'+n(exportRows.filter(r=>r.latestHearing===0).length)+'</td><td>'+pct(exportRows.filter(r=>r.latestHearing===0).length,grand.ps)+'</td></tr></tbody></table>';
   h+='<div class="small">Report generated from CURRENT dashboard data at '+new Date().toLocaleString("en-IN")+'. Red rows = ZERO HEARING HELD.</div><div class="summaryEnd"></div>';
 
-  const hearingRateRows=groups.map(g=>({officer:g.aero,designation:String(g.rs[0]?.designation||""),ps:g.x.ps,hearing:g.x.lh,gen:g.x.gen,pct:g.x.gen?g.x.lh/g.x.gen*100:0}));
+  const hearingRateRows=groups.map(g=>({officer:g.aero,designation:String(g.rs[0]?.designation||""),ps:g.x.ps,hearing:g.x.lh,gen:g.x.gen,pct:g.x.gen?g.x.lh/g.x.gen*100:0})).sort((a,b)=>b.pct-a.pct || a.officer.localeCompare(b.officer));
   const attentionPsByOfficer=new Map<string,Set<number>>();
   groups.forEach(g=>{
     // Exactly 3 selected PS per officer. Zero-hearing selected PS remain red so the zero-hearing status is visible.
