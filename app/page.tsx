@@ -183,6 +183,17 @@ const n=(x:number)=>x.toLocaleString("en-IN");
 const pct=(a:number,b:number)=>b?((a/b)*100).toFixed(2)+"%":"0.00%";
 const esc=(x:any)=>String(x??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
+const REPORT_AERO_ORDER=[
+  "Smt. Anuja Trivedi","Smt. Parul Gupta","Sh. Parveen Kumar","Smt. Shashi Bala",
+  "Sh. Subhashish Boss","Sh. Virender Singh","Sh. Ajay Kumar","Smt. Ranjana Sharma",
+  "Smt. Mamta Meena","Sh. Rajesh Shriwastav","Smt. Saroj Meena","Sh. Hemvir",
+  "Sh. Rakesh Yadav","Sh. Mohit","Smt. Vandana Bansal","Sh. Dharamvir Singh","Sh. Manoj Kumar"
+];
+function reportAeroIndex(name:string){
+  const i=REPORT_AERO_ORDER.indexOf(name);
+  return i>=0?i:999;
+}
+
 function buildGroups(rows:Row[]){
   const groups=new Map<string,Row[]>();
   for(const r of rows){const k=r.aero||"Unmapped";const a=groups.get(k)||[];a.push(r);groups.set(k,a);}
@@ -190,7 +201,7 @@ function buildGroups(rows:Row[]){
   return Array.from(groups.entries()).map(([aero,rs])=>{
     const x={ps:rs.length,gen:sum(rs,"noticeGenerated"),pd:sum(rs,"prevDelivered"),ld:sum(rs,"latestDelivered"),ph:sum(rs,"prevHearing"),lh:sum(rs,"latestHearing"),lapse:sum(rs,"hearingLapse"),disc:sum(rs,"discrepancyDelivered"),docs:sum(rs,"bloDocs"),letter:sum(rs,"bloLetter")};
     return {aero,rs,x,dispose:x.lh+x.lapse?x.lh/(x.lh+x.lapse)*100:0};
-  });
+  }).sort((a,b)=>reportAeroIndex(a.aero)-reportAeroIndex(b.aero));
 }
 
 function getTopAeros(rows:Row[]){
@@ -220,7 +231,7 @@ function printReport(rows:Row[], sourceTotals?:{totalDocs?:number,totalDisc?:num
   // Snapshot the CURRENT dashboard state at the exact moment PDF export is clicked.
   // This prevents the print window from ever depending on a stale reference after an Excel refresh.
   const exportRows:Row[]=rows.map(r=>({...r}));
-  const groups=buildGroups(exportRows).sort((a,b)=>a.aero.localeCompare(b.aero));
+  const groups=buildGroups(exportRows);
   const topAeros=getTopAeros(exportRows);
   const topBlo=getTopBloKeys(exportRows);
   const grand=groups.reduce((g,z)=>({ps:g.ps+z.x.ps,gen:g.gen+z.x.gen,pd:g.pd+z.x.pd,ld:g.ld+z.x.ld,ph:g.ph+z.x.ph,lh:g.lh+z.x.lh,lapse:g.lapse+z.x.lapse,disc:g.disc+z.x.disc,docs:g.docs+z.x.docs,letter:g.letter+z.x.letter}),{ps:0,gen:0,pd:0,ld:0,ph:0,lh:0,lapse:0,disc:0,docs:0,letter:0});
@@ -277,7 +288,7 @@ export default function Page(){
   const sups=useMemo(()=>["ALL",...Array.from(new Set(rows.map(r=>r.supervisor).filter(Boolean)))],[rows]);
   const shown=useMemo(()=>rows.filter(r=>(filterAero==="ALL"||r.aero===filterAero)&&(filterSup==="ALL"||r.supervisor===filterSup)&&((r.ps+" "+r.bloName+" "+r.supervisor+" "+r.aero).toLowerCase().includes(search.toLowerCase()))),[rows,filterAero,filterSup,search]);
   const totals=useMemo(()=>rows.reduce((a,r)=>({gen:a.gen+r.noticeGenerated,del:a.del+r.latestDelivered,ph:a.ph+r.prevHearing,lh:a.lh+r.latestHearing,zero:a.zero+(r.latestHearing===0?1:0)}),{gen:0,del:0,ph:0,lh:0,zero:0}),[rows]);
-  const officerSummary=useMemo(()=>{const m=new Map<string,any>();for(const r of rows){const k=r.aero||"Unmapped";const x=m.get(k)||{aero:k,designation:r.designation,ps:0,gen:0,del:0,dh:0,zero:0};x.ps++;x.gen+=r.noticeGenerated;x.del+=r.latestDelivered;x.dh+=r.latestHearing;x.zero+=r.latestHearing===0?1:0;m.set(k,x);}return Array.from(m.values()).sort((a,b)=>a.aero.localeCompare(b.aero));},[rows]);
+  const officerSummary=useMemo(()=>{const m=new Map<string,any>();for(const r of rows){const k=r.aero||"Unmapped";const x=m.get(k)||{aero:k,designation:r.designation,ps:0,gen:0,del:0,dh:0,zero:0};x.ps++;x.gen+=r.noticeGenerated;x.del+=r.latestDelivered;x.dh+=r.latestHearing;x.zero+=r.latestHearing===0?1:0;m.set(k,x);}return Array.from(m.values()).sort((a,b)=>reportAeroIndex(a.aero)-reportAeroIndex(b.aero));},[rows]);
   const underperformers=useMemo(()=>{const m=officerSummary.map(x=>{const rs=rows.filter(r=>r.aero===x.aero);const hearing=rs.reduce((s,r)=>s+r.latestHearing,0);const lapse=rs.reduce((s,r)=>s+r.hearingLapse,0);return {aero:x.aero,dispose:(hearing+lapse)?hearing/(hearing+lapse)*100:0};}).sort((a,b)=>a.dispose-b.dispose);return new Set(m.slice(0,3).map(x=>x.aero));},[officerSummary,rows]);
   const topAeros=useMemo(()=>getTopAeros(rows),[rows]);
   const topBlo=useMemo(()=>getTopBloKeys(rows),[rows]);
