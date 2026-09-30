@@ -257,9 +257,8 @@ function printReport(rows:Row[], sourceTotals?:{totalDocs?:number,totalDisc?:num
 
   const attentionPsByOfficer=new Map<string,Set<number>>();
   groups.forEach(g=>{
-    // Exactly 3 visible blue PS rows per officer. Zero-hearing rows stay red.
+    // Exactly 3 selected PS per officer. Zero-hearing selected PS remain red so the zero-hearing status is visible.
     const scored=g.rs
-      .filter(r=>r.latestHearing>0)
       .map(r=>{
         const delPct=r.noticeGenerated?r.latestDelivered/r.noticeGenerated*100:0;
         const hearPct=r.noticeGenerated?r.latestHearing/r.noticeGenerated*100:0;
